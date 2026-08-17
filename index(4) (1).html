@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VIRALINK V5 — Central de Afiliados</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#07111f;color:#f8fafc}
+:root{--p:#7c3aed;--p2:#a855f7;--card:#0d1a2e;--line:#25344f;--muted:#9fb0c9;--green:#16a34a;--blue:#2563eb}
+.app{display:grid;grid-template-columns:245px 1fr;min-height:100vh}
+.side{background:#06101d;border-right:1px solid var(--line);padding:22px 16px;position:sticky;top:0;height:100vh}
+.logo{font-size:27px;font-weight:900;font-style:italic;margin:4px 8px 28px} .logo span{color:var(--p2)}
+.nav button{width:100%;border:0;background:transparent;color:#cbd5e1;padding:13px;border-radius:10px;text-align:left;font-size:15px;margin:3px 0;cursor:pointer}
+.nav button.active,.nav button:hover{background:linear-gradient(90deg,#5b21b6,#7c3aed);color:#fff}
+.plan{margin-top:25px;padding:15px;border:1px solid #6d28d9;background:#2d125c;border-radius:14px}
+.main{padding:28px;max-width:1450px;width:100%}
+.top{display:flex;justify-content:space-between;align-items:center;gap:15px}
+.search{width:min(520px,60vw);background:var(--card);border:1px solid var(--line);color:white;padding:12px 15px;border-radius:11px}
+h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:18px}
+.metric b{display:block;font-size:27px;margin:10px 0 4px}
+.challenge{margin-top:18px;border-color:#6d28d9;background:linear-gradient(135deg,#160d35,#0b2347)}
+.challengeTop{display:flex;justify-content:space-between;gap:15px;align-items:center}
+.goalgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
+.goal{background:#09172a;border:1px solid #2c3c59;border-radius:12px;padding:14px}
+.goal strong{font-size:20px} .bar{height:8px;background:#1e293b;border-radius:99px;overflow:hidden;margin-top:10px}
+.fill{height:100%;background:linear-gradient(90deg,#7c3aed,#c084fc);border-radius:99px}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+.action,.btn{border:0;color:white;cursor:pointer;font-weight:700}
+.action{background:linear-gradient(135deg,#25105a,#123875);padding:20px;border-radius:14px;font-size:16px}
+.btn{background:linear-gradient(90deg,#6d28d9,#9333ea);padding:12px 16px;border-radius:10px}
+.btn.secondary{background:#14233a;border:1px solid #34445f} .btn.green{background:#16a34a}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.products{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.product{padding:0;overflow:hidden} .product img{width:100%;height:200px;object-fit:cover;background:#111}
+.product .body{padding:15px} .badge{display:inline-block;background:#7c2d12;padding:5px 9px;border-radius:999px;font-size:12px}
+.price{font-size:23px;font-weight:900;margin:8px 0}
+.desc{color:var(--muted);font-size:14px;line-height:1.45;min-height:58px}
+.aiout{white-space:pre-wrap;background:#07111f;border:1px solid #2b3d5b;padding:16px;border-radius:12px;min-height:180px;line-height:1.5}
+.hide{display:none!important} .empty{text-align:center;padding:40px;color:var(--muted)}
+.note{padding:13px;border-left:4px solid #a855f7;background:#15132b;border-radius:8px;margin:15px 0}
+.statusok{color:#4ade80;font-weight:700} .statuserr{color:#fb7185;font-weight:700}
+.cloud{display:inline-flex;gap:7px;align-items:center;padding:6px 10px;border-radius:999px;background:#0b2b22;border:1px solid #14532d;color:#86efac;font-size:12px}
+.authBadge{display:inline-flex;gap:7px;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px}
+.authBadge.on{background:#0b2b22;border:1px solid #14532d;color:#86efac}
+.authBadge.off{background:#3a0d18;border:1px solid #7f1d1d;color:#fca5a5}
+.field{margin-bottom:12px}
+.field label{display:block;margin-bottom:6px;color:var(--muted);font-size:13px}
+.field input,.field select,.field textarea{width:100%;background:#081525;border:1px solid #2a3b57;color:white;border-radius:9px;padding:11px;font-family:inherit;font-size:14px}
+.field textarea{min-height:70px;resize:vertical}
+.errbox{color:#fb7185;margin-top:8px;font-size:13px}
+.btn.small{padding:8px 12px;font-size:13px}
+.btn.red{background:#b91c1c}
+.productAdminBtns{display:flex;gap:8px;margin-top:10px}
+.aiPlatformBtn.active{background:linear-gradient(90deg,#6d28d9,#9333ea);border-color:transparent}
+.copyState{color:#4ade80;font-size:13px;margin-left:10px}
+.modalOverlay{position:fixed;inset:0;background:rgba(4,8,16,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modalOverlay.hide{display:none!important}
+.modalBox{max-width:460px;width:100%;max-height:90vh;overflow:auto}
+
+.pubChannels{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:12px}
+.pubChannel{background:#0a1728;border:1px solid #2a3b57;border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.pubChannel input{accent-color:#7c3aed}
+.pubStatus{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;background:#17243a;border:1px solid #32435f;color:#cbd5e1}
+.pubStatus.ok{background:#0b2b22;border-color:#14532d;color:#86efac}
+.pubStatus.warn{background:#3a2a0d;border-color:#854d0e;color:#fde68a}
+.pubStatus.err{background:#3a0d18;border-color:#7f1d1d;color:#fca5a5}
+.pubPreviewGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px}
+.pubPreview{white-space:pre-wrap;min-height:180px}
+.historyItem{display:grid;grid-template-columns:1.2fr .9fr .8fr .8fr;gap:10px;padding:12px 0;border-bottom:1px solid #22304a;align-items:center}
+@media(max-width:700px){.historyItem{grid-template-columns:1fr}.pubPreviewGrid{grid-template-columns:1fr}}
+
+@media(max-width:950px){.app{grid-template-columns:1fr}.side{height:auto;position:static}.nav{display:flex;overflow:auto}.nav button{min-width:max-content}.grid4,.goalgrid,.actions{grid-template-columns:1fr}.main{padding:18px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="logo">▶ VIRA<span>LINK</span></div>
+  <div class="nav">
+    <button data-page="dashboard" class="active">🏠 Dashboard</button>
+    <button data-page="products">🛍 Produtos</button>
+    <button data-page="store">✨ Minha Vitrine</button>
+    <button data-page="ai">✨ IA Creator</button>
+    <button data-page="publications">📤 Publicações</button>
+    <button data-page="integrations">🔌 Integrações</button>
+    <button data-page="login" id="navLogin">🔐 Login CEO</button>
+  </div>
+  <div class="plan"><b>VIRALINK V5</b><p style="font-size:13px">Supabase conectado</p><small>Produtos na nuvem ☁️</small></div>
+</aside>
+
+<main class="main">
+<div class="top">
+  <input id="search" class="search" placeholder="Buscar produtos...">
+  <span class="cloud">☁️ Banco online</span>
+  <span class="authBadge off" id="authBadge">🔒 Visitante</span>
+</div>
+
+<section id="dashboard" class="page">
+  <h1>Bom dia, CEO! 👋</h1>
+  <div class="sub">Agora a VIRALINK está buscando seus produtos na nuvem.</div>
+  <div class="grid4">
+    <div class="card metric">Produtos ativos<b id="mProducts">—</b><span class="muted">Meta: 50</span></div>
+    <div class="card metric">Cliques<b>—</b><span class="muted">Próxima etapa</span></div>
+    <div class="card metric">Conteúdos IA<b>0</b><span class="muted">Meta: 100</span></div>
+    <div class="card metric">Publicações<b>0</b><span class="muted">Meta: 60</span></div>
+  </div>
+  <div class="card challenge">
+    <div class="challengeTop"><div><h2 style="margin:0">🎯 Desafio VIRALINK — 30 Dias</h2><div class="muted">Primeiro objetivo: validar a vitrine online com produtos reais.</div></div><b id="cloudStatus">Conectando...</b></div>
+    <div class="goalgrid">
+      <div class="goal"><span class="muted">Produtos</span><br><strong id="goalProducts">—/50</strong><div class="bar"><div id="barProducts" class="fill" style="width:0%"></div></div></div>
+      <div class="goal"><span class="muted">Conteúdos</span><br><strong>0/100</strong><div class="bar"><div class="fill" style="width:0%"></div></div></div>
+      <div class="goal"><span class="muted">Publicações</span><br><strong>0/60</strong><div class="bar"><div class="fill" style="width:0%"></div></div></div>
+      <div class="goal"><span class="muted">Cliques</span><br><strong>0/500</strong><div class="bar"><div class="fill" style="width:0%"></div></div></div>
+      <div class="goal"><span class="muted">Vendas</span><br><strong>0/10</strong><div class="bar"><div class="fill" style="width:0%"></div></div></div>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="action" onclick="showPage('products')">☁️ Ver produtos online</button>
+    <button class="action" onclick="showPage('ai')">✦ Criar conteúdo</button>
+    <button class="action" onclick="showPage('store')">🛍 Abrir minha vitrine</button>
+  </div>
+  <div class="note"><b>Segurança:</b> visitantes veem somente produtos ativos. Cadastrar, editar e excluir produtos exige login do CEO (Supabase Authentication).</div>
+</section>
+
+<section id="products" class="page hide">
+  <h1>Produtos na nuvem</h1>
+  <div class="sub">Estes produtos vêm diretamente do Supabase.</div>
+  <div class="row" style="margin:15px 0" id="productsToolbar">
+    <button class="btn" id="btnAddProduct" onclick="openProductForm()" disabled>+ Adicionar produto</button>
+    <button class="btn secondary" onclick="refreshProducts()">↻ Atualizar</button>
+  </div>
+  <div class="note hide" id="productsLockedNote">🔒 Faça <a href="#" onclick="showPage('login');return false;" style="color:#c084fc">login como CEO</a> para cadastrar, editar ou excluir produtos. Visitantes veem apenas produtos ativos.</div>
+  <div id="productList" class="products"></div>
+</section>
+
+<section id="store" class="page hide">
+  <h1>Minha Vitrine</h1>
+  <div class="sub">Essa é a vitrine que pode ser acessada em qualquer computador ou celular.</div>
+  <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#25105a,#0c3064)">
+    <b style="color:#c084fc">OFERTAS VIRALINK</b>
+    <h2>Achadinhos selecionados</h2>
+    <span class="muted">Os produtos abaixo são carregados do banco online.</span>
+  </div>
+  <div id="storeList" class="products"></div>
+</section>
+
+<section id="ai" class="page hide">
+  <h1>IA Creator</h1>
+  <div class="sub">Use os produtos da nuvem para preparar textos de divulgação para várias redes.</div>
+  <div class="card">
+    <label>Produto</label><br><br>
+    <select id="aiProduct" style="width:100%;background:#081525;border:1px solid #2a3b57;color:white;border-radius:9px;padding:12px"></select>
+    <div class="field" style="margin-top:16px">
+      <label>Plataforma do conteúdo</label>
+      <div class="row" id="aiPlatformTabs">
+        <button type="button" class="btn secondary aiPlatformBtn active" data-platform="whatsapp" onclick="setAIPlatform('whatsapp')">💬 WhatsApp</button>
+        <button type="button" class="btn secondary aiPlatformBtn" data-platform="instagram" onclick="setAIPlatform('instagram')">📸 Instagram</button>
+        <button type="button" class="btn secondary aiPlatformBtn" data-platform="blogger" onclick="setAIPlatform('blogger')">✍️ Blogger</button>
+        <button type="button" class="btn secondary aiPlatformBtn" data-platform="tiktok" onclick="setAIPlatform('tiktok')">🎬 TikTok/Shorts</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px;align-items:center">
+      <button class="btn" onclick="generateAI()">✨ Gerar conteúdo</button>
+      <button class="btn secondary" id="btnCopyAI" onclick="copyAIOutput()">📋 Copiar texto</button>
+      <span id="copyState" class="copyState hide">Copiado!</span>
+    </div>
+  </div>
+  <h3>Conteúdo — <span id="aiPlatformLabel">WhatsApp</span></h3>
+  <div id="aiOut" class="aiout">Selecione um produto.</div>
+</section>
+
+
+<section id="publications" class="page hide">
+  <h1>📤 Publicações</h1>
+  <div class="sub">Prepare campanhas a partir dos produtos do Supabase e acompanhe o status de cada canal.</div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="field">
+      <label>Produto</label>
+      <select id="pubProduct"></select>
+    </div>
+
+    <div class="field">
+      <label>Canais</label>
+      <div class="pubChannels">
+        <label class="pubChannel"><input type="checkbox" value="blogger" checked> ✍️ Blogger</label>
+        <label class="pubChannel"><input type="checkbox" value="instagram"> 📸 Instagram</label>
+        <label class="pubChannel"><input type="checkbox" value="facebook"> 📘 Facebook</label>
+        <label class="pubChannel"><input type="checkbox" value="tiktok"> 🎬 TikTok/Shorts</label>
+        <label class="pubChannel"><input type="checkbox" value="whatsapp"> 💬 WhatsApp</label>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="generateCampaign()">✨ Gerar campanha</button>
+      <button class="btn secondary" onclick="showPage('integrations')">🔌 Conectar contas</button>
+      <button class="btn green" id="btnPublishSelected" onclick="publishSelected()" disabled>🚀 Publicar selecionados</button>
+    </div>
+
+    <div class="note">
+      <b>Modo seguro:</b> esta V5 prepara as publicações e o histórico, mas ainda não envia para APIs externas.
+      O primeiro canal que conectaremos de verdade será o Blogger.
+    </div>
+  </div>
+
+  <h3>Prévia dos canais</h3>
+  <div id="pubPreviewGrid" class="pubPreviewGrid"></div>
+
+  <h3 style="margin-top:24px">Histórico</h3>
+  <div class="card" id="pubHistory">
+    <div class="muted">Nenhuma publicação registrada ainda.</div>
+  </div>
+</section>
+
+<section id="integrations" class="page hide">
+  <h1>Integrações</h1>
+  <div class="sub">Estado atual da infraestrutura.</div>
+  <div class="grid4">
+    <div class="card"><h3>☁️ Supabase</h3><p class="statusok">Conectado</p></div>
+    <div class="card"><h3>🟠 Shopee</h3><p class="muted">Links de afiliado ativos</p></div>
+    <div class="card"><h3>🔐 Login CEO</h3><p class="statusok">Ativo (Supabase Auth)</p></div>
+    <div class="card"><h3>✍️ Blogger</h3><p class="pubStatus warn">Não conectado</p></div>
+    <div class="card"><h3>📸 Instagram</h3><p class="pubStatus warn">Não conectado</p></div>
+    <div class="card"><h3>📘 Facebook</h3><p class="pubStatus warn">Não conectado</p></div>
+    <div class="card"><h3>🎬 TikTok</h3><p class="pubStatus warn">Não conectado</p></div>
+    <div class="card"><h3>💬 WhatsApp</h3><p class="pubStatus warn">Não conectado</p></div>
+    <div class="card"><h3>📊 Cliques</h3><p class="muted">Próxima etapa</p></div>
+  </div>
+</section>
+
+<section id="login" class="page hide">
+  <h1>Login do CEO</h1>
+  <div class="sub">Acesso restrito às funções administrativas da VIRALINK.</div>
+  <div class="card" style="max-width:420px" id="loginCard">
+    <div id="loginFormWrap">
+      <div class="field"><label>E-mail</label><input id="loginEmail" type="email" placeholder="ceo@viralink.com" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="field"><label>Senha</label><input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn" style="width:100%" onclick="doLogin()">Entrar</button>
+      <div id="loginError" class="errbox hide"></div>
+    </div>
+    <div id="loggedInWrap" class="hide">
+      <p>Sessão ativa como <b id="loggedEmail"></b></p>
+      <button class="btn secondary" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+
+<div class="modalOverlay hide" id="productModal">
+  <div class="card modalBox">
+    <h2 id="productModalTitle">Novo produto</h2>
+    <div class="field"><label>Nome</label><input id="fName"></div>
+    <div class="field"><label>Descrição</label><textarea id="fDescription"></textarea></div>
+    <div class="field"><label>Preço (R$)</label><input id="fPrice" type="number" step="0.01"></div>
+    <div class="field"><label>Plataforma</label><input id="fPlatform" placeholder="Shopee, Amazon..."></div>
+    <div class="field"><label>Categoria</label><input id="fCategory"></div>
+    <div class="field"><label>URL da imagem</label><input id="fImage"></div>
+    <div class="field"><label>Link de afiliado</label><input id="fLink"></div>
+    <div class="field"><label>Status</label>
+      <select id="fStatus"><option value="active">Ativo</option><option value="inactive">Inativo</option></select>
+    </div>
+    <div id="formError" class="errbox hide"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" onclick="submitProductForm()">Salvar</button>
+      <button class="btn secondary" onclick="closeProductForm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://pfbzdktlfdotsgfarhel.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_nXkBQxBy18WoOH21matfzg_CQdDCvLi';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let products = [];
+let adminProducts = [];
+let session = null;
+let editingProductId = null;
+
+const $ = id => document.getElementById(id);
+
+document.querySelectorAll('.nav button').forEach(b => b.onclick = () => showPage(b.dataset.page));
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(x=>x.classList.add('hide'));
+  $(id).classList.remove('hide');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+  if(id==='store') renderStore();
+  if(id==='products') renderProducts();
+  if(id==='ai') fillAI();
+  if(id==='publications') fillPublications();
+}
+
+function escapeHtml(v='') {
+  return String(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+function fallbackImage(){
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#26115a"/><stop offset="1" stop-color="#0d3975"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><text x="50%" y="46%" fill="#fff" font-family="Arial" font-size="38" font-weight="bold" text-anchor="middle">VIRALINK</text><text x="50%" y="58%" fill="#c084fc" font-family="Arial" font-size="20" text-anchor="middle">Oferta na nuvem</text></svg>'
+  );
+}
+
+async function loadProducts(){
+  $('cloudStatus').textContent = 'Conectando...';
+  try {
+    const endpoint = `${SUPABASE_URL}/rest/v1/products?select=id,created_at,name,description,price,platform,category,image_url,affiliate_url,status&status=eq.active&order=created_at.desc`;
+    const r = await fetch(endpoint, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      }
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status + ' — ' + await r.text());
+    products = await r.json();
+    $('cloudStatus').textContent = '☁️ Supabase conectado';
+    $('cloudStatus').className = 'statusok';
+    updateMetrics();
+    renderProducts();
+    renderStore();
+    fillAI();
+    if($('pubProduct')) fillPublications();
+  } catch(err) {
+    console.error(err);
+    $('cloudStatus').textContent = 'Erro ao conectar';
+    $('cloudStatus').className = 'statuserr';
+    const msg = `<div class="card empty"><b>Não foi possível carregar o banco.</b><br><br>${escapeHtml(err.message)}<br><br>Confira a política RLS e a chave publicável.</div>`;
+    $('productList').innerHTML = msg;
+    $('storeList').innerHTML = msg;
+  }
+}
+
+function updateMetrics(){
+  const n = products.length;
+  $('mProducts').textContent = n;
+  $('goalProducts').textContent = n + '/50';
+  $('barProducts').style.width = Math.min(100, Math.round(n/50*100)) + '%';
+}
+
+function card(p, store=false){
+  const price = p.price == null ? 'Consulte' : Number(p.price).toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2});
+  const safeLink = escapeHtml(p.affiliate_url || '#');
+  const safeImg = escapeHtml(p.image_url || fallbackImage());
+  return `<div class="card product">
+    <img src="${safeImg}" onerror="this.src='${fallbackImage()}'">
+    <div class="body">
+      <span class="badge">${escapeHtml(p.platform || 'Oferta')}</span>
+      <h3>${escapeHtml(p.name || 'Produto')}</h3>
+      <div class="muted">${escapeHtml(p.category || 'Oferta')}</div>
+      <div class="desc">${escapeHtml(p.description || '')}</div>
+      <div class="price">R$ ${price}</div>
+      ${store ? `<button class="btn green" onclick="openOffer('${safeLink}')">Ver oferta →</button>` : `<span class="cloud">☁️ Supabase</span>`}
+    </div>
+  </div>`;
+}
+
+function renderProducts(){
+  if(session){
+    $('productList').innerHTML = adminProducts.length ? adminProducts.map(p=>adminCard(p)).join('') : '<div class="card empty">Nenhum produto cadastrado ainda.</div>';
+  } else {
+    $('productList').innerHTML = products.length ? products.map(p=>card(p,false)).join('') : '<div class="card empty">Nenhum produto ativo encontrado no Supabase.</div>';
+  }
+}
+function adminCard(p){
+  const price = p.price == null ? 'Consulte' : Number(p.price).toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2});
+  const safeImg = escapeHtml(p.image_url || fallbackImage());
+  const statusLabel = p.status === 'active' ? 'Ativo' : 'Inativo';
+  return `<div class="card product">
+    <img src="${safeImg}" onerror="this.src='${fallbackImage()}'">
+    <div class="body">
+      <span class="badge">${escapeHtml(p.platform || 'Oferta')}</span>
+      <h3>${escapeHtml(p.name || 'Produto')}</h3>
+      <div class="muted">${escapeHtml(p.category || 'Oferta')} · ${statusLabel}</div>
+      <div class="desc">${escapeHtml(p.description || '')}</div>
+      <div class="price">R$ ${price}</div>
+      <div class="productAdminBtns">
+        <button class="btn small secondary" onclick="openProductForm('${p.id}')">✎ Editar</button>
+        <button class="btn small red" onclick="removeProduct('${p.id}')">🗑 Excluir</button>
+      </div>
+    </div>
+  </div>`;
+}
+function refreshProducts(){
+  loadProducts();
+  if(session) loadAdminProducts();
+}
+function renderStore(){
+  $('storeList').innerHTML = products.length ? products.map(p=>card(p,true)).join('') : '<div class="card empty">A vitrine ainda não possui produtos ativos.</div>';
+}
+function openOffer(url){
+  if(!url || url==='#') return alert('Este produto ainda não possui link de afiliado.');
+  window.open(url,'_blank','noopener');
+}
+function fillAI(){
+  $('aiProduct').innerHTML = products.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  generateAI();
+}
+
+let aiPlatform = 'whatsapp';
+const AI_PLATFORM_LABELS = { whatsapp: 'WhatsApp', instagram: 'Instagram', blogger: 'Blogger', tiktok: 'TikTok/Shorts' };
+
+function setAIPlatform(platform){
+  aiPlatform = platform;
+  document.querySelectorAll('.aiPlatformBtn').forEach(b => b.classList.toggle('active', b.dataset.platform === platform));
+  $('aiPlatformLabel').textContent = AI_PLATFORM_LABELS[platform] || platform;
+  generateAI();
+}
+
+function aiPriceText(p){
+  return p.price == null ? 'consulte o valor na oferta' : 'R$ ' + Number(p.price).toLocaleString('pt-BR',{minimumFractionDigits:2});
+}
+
+function aiHashtags(p){
+  const slugify = v => '#' + String(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'');
+  const tags = [];
+  if(p.platform) tags.push(slugify(p.platform));
+  if(p.category) tags.push(slugify(p.category));
+  tags.push('#promocao', '#oferta', '#achadinhos');
+  return [...new Set(tags)].filter(t => t.length > 1).slice(0,6).join(' ');
+}
+
+function buildAIContent(p, platform){
+  const price = aiPriceText(p);
+  const name = p.name || 'Produto';
+  const desc = p.description || 'Confira os detalhes desta oferta.';
+  const platformName = p.platform || 'loja parceira';
+  const link = p.affiliate_url || 'link em breve';
+
+  if(platform === 'instagram'){
+    return `✨ ${name} chegou pra você! ✨
+
+${desc}
+
+💰 ${price}
+🛍️ Disponível via ${platformName}
+
+👉 Corre no link da bio/stories antes que acabe!
+
+${aiHashtags(p)}`;
+  }
+  if(platform === 'blogger'){
+    return `${name}: será que vale a pena?
+
+Se você está de olho em ${name.toLowerCase()}, essa oferta merece atenção. ${desc}
+
+Encontrado via ${platformName}, o produto está saindo por ${price}. Preço e disponibilidade podem mudar a qualquer momento, então vale a pena conferir agora mesmo antes que a oferta acabe.
+
+👉 Acesse a oferta completa e garanta a sua unidade:
+${link}`;
+  }
+  if(platform === 'tiktok'){
+    return `🎬 Roteiro — ${name}
+
+GANCHO (0-3s):
+"Para de rolar! Achei ${name} por ${price} e você precisa ver isso."
+
+APRESENTAÇÃO (3-15s):
+${desc}
+Mostre o produto em uso e destaque o diferencial principal e o preço na tela.
+
+CTA (últimos segundos):
+"Link na bio/comentários para garantir o seu na ${platformName}. Corre antes que acabe!"`;
+  }
+  // whatsapp (default)
+  return `🔥 *${name}*
+${desc}
+
+💰 ${price} | 🛍️ ${platformName}
+
+👉 Corre que é por tempo limitado! Garanta o seu:
+${link}`;
+}
+
+function generateAI(){
+  const p = products.find(x=>String(x.id)===$('aiProduct').value);
+  if(!p){
+    $('aiOut').textContent = 'Selecione um produto.';
+    return;
+  }
+  $('aiOut').textContent = buildAIContent(p, aiPlatform);
+}
+
+function copyAIOutput(){
+  const text = $('aiOut').textContent;
+  if(!text || text === 'Selecione um produto.') return;
+  const done = () => {
+    const el = $('copyState');
+    el.classList.remove('hide');
+    clearTimeout(copyAIOutput._t);
+    copyAIOutput._t = setTimeout(() => el.classList.add('hide'), 1800);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(() => {
+      alert('Não foi possível copiar automaticamente. Selecione o texto manualmente.');
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch(e) { alert('Não foi possível copiar automaticamente. Selecione o texto manualmente.'); }
+    document.body.removeChild(ta);
+  }
+}
+
+
+const PUB_LABELS = {
+  blogger: 'Blogger',
+  instagram: 'Instagram',
+  facebook: 'Facebook',
+  tiktok: 'TikTok/Shorts',
+  whatsapp: 'WhatsApp'
+};
+
+let publicationHistory = [];
+
+function fillPublications(){
+  const select = $('pubProduct');
+  if(!select) return;
+  select.innerHTML = products.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  if(products.length) generateCampaign();
+  else $('pubPreviewGrid').innerHTML = '<div class="card empty">Cadastre um produto ativo para preparar uma campanha.</div>';
+}
+
+function publicationContent(p, channel){
+  if(channel === 'facebook'){
+    const price = aiPriceText(p);
+    return `🔥 ${p.name}
+
+${p.description || 'Confira esta oferta.'}
+
+💰 ${price}
+🛍️ ${p.platform || 'Loja parceira'}
+
+👉 Veja a oferta:
+${p.affiliate_url || 'link em breve'}`;
+  }
+  return buildAIContent(p, channel);
+}
+
+function generateCampaign(){
+  const p = products.find(x=>String(x.id)===$('pubProduct').value);
+  const grid = $('pubPreviewGrid');
+  if(!p){
+    grid.innerHTML = '<div class="card empty">Selecione um produto.</div>';
+    $('btnPublishSelected').disabled = true;
+    return;
+  }
+
+  const selected = [...document.querySelectorAll('.pubChannel input:checked')].map(x=>x.value);
+  if(!selected.length){
+    grid.innerHTML = '<div class="card empty">Selecione pelo menos um canal.</div>';
+    $('btnPublishSelected').disabled = true;
+    return;
+  }
+
+  grid.innerHTML = selected.map(ch => `
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h3 style="margin:0">${PUB_LABELS[ch]}</h3>
+        <span class="pubStatus warn">Aguardando integração</span>
+      </div>
+      <div class="aiout pubPreview" style="margin-top:12px">${escapeHtml(publicationContent(p,ch))}</div>
+    </div>
+  `).join('');
+
+  $('btnPublishSelected').disabled = false;
+}
+
+function publishSelected(){
+  const p = products.find(x=>String(x.id)===$('pubProduct').value);
+  const selected = [...document.querySelectorAll('.pubChannel input:checked')].map(x=>x.value);
+  if(!p || !selected.length) return;
+
+  const now = new Date().toLocaleString('pt-BR');
+  selected.forEach(ch => {
+    publicationHistory.unshift({
+      product: p.name,
+      channel: PUB_LABELS[ch],
+      status: 'Aguardando integração',
+      date: now
+    });
+  });
+
+  renderPublicationHistory();
+  alert('Campanha registrada. A publicação real será ativada quando conectarmos as APIs oficiais.');
+}
+
+function renderPublicationHistory(){
+  const box = $('pubHistory');
+  if(!publicationHistory.length){
+    box.innerHTML = '<div class="muted">Nenhuma publicação registrada ainda.</div>';
+    return;
+  }
+  box.innerHTML = publicationHistory.map(item => `
+    <div class="historyItem">
+      <div><b>${escapeHtml(item.product)}</b></div>
+      <div>${escapeHtml(item.channel)}</div>
+      <div><span class="pubStatus warn">${escapeHtml(item.status)}</span></div>
+      <div class="muted">${escapeHtml(item.date)}</div>
+    </div>
+  `).join('');
+}
+
+document.addEventListener('change', e => {
+  if(e.target && e.target.matches('.pubChannel input')) generateCampaign();
+});
+
+$('search').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.product').forEach(c => c.style.display = c.innerText.toLowerCase().includes(q) ? '' : 'none');
+});
+
+$('aiProduct').addEventListener('change', generateAI);
+
+async function doLogin(){
+  const email = $('loginEmail').value.trim();
+  const password = $('loginPassword').value;
+  $('loginError').classList.add('hide');
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){
+    $('loginError').textContent = 'Não foi possível entrar: ' + error.message;
+    $('loginError').classList.remove('hide');
+  } else {
+    $('loginPassword').value = '';
+  }
+}
+async function doLogout(){
+  await sb.auth.signOut();
+}
+function updateAuthUI(){
+  const logged = !!session;
+  $('navLogin').textContent = logged ? '🔓 Sair (CEO)' : '🔐 Login CEO';
+  $('authBadge').textContent = logged ? '🔓 CEO autenticado' : '🔒 Visitante';
+  $('authBadge').className = 'authBadge ' + (logged ? 'on' : 'off');
+  $('loginFormWrap').classList.toggle('hide', logged);
+  $('loggedInWrap').classList.toggle('hide', !logged);
+  if(logged) $('loggedEmail').textContent = session.user.email;
+  $('btnAddProduct').disabled = !logged;
+  $('productsLockedNote').classList.toggle('hide', logged);
+  if(logged) loadAdminProducts();
+  else { adminProducts = []; closeProductForm(); }
+  renderProducts();
+}
+sb.auth.onAuthStateChange((_event, sess) => {
+  session = sess;
+  updateAuthUI();
+});
+
+async function loadAdminProducts(){
+  if(!session) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*&order=created_at.desc`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + session.access_token
+      }
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status + ' — ' + await r.text());
+    adminProducts = await r.json();
+    renderProducts();
+  } catch(err) {
+    console.error(err);
+    $('productList').innerHTML = `<div class="card empty">Erro ao carregar produtos administrativos.<br>${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function openProductForm(id=null){
+  if(!session) return;
+  editingProductId = id;
+  const p = id ? adminProducts.find(x=>String(x.id)===String(id)) : null;
+  $('productModalTitle').textContent = p ? 'Editar produto' : 'Novo produto';
+  $('fName').value = p?.name || '';
+  $('fDescription').value = p?.description || '';
+  $('fPrice').value = p?.price ?? '';
+  $('fPlatform').value = p?.platform || '';
+  $('fCategory').value = p?.category || '';
+  $('fImage').value = p?.image_url || '';
+  $('fLink').value = p?.affiliate_url || '';
+  $('fStatus').value = p?.status || 'active';
+  $('formError').classList.add('hide');
+  $('productModal').classList.remove('hide');
+}
+function closeProductForm(){
+  $('productModal').classList.add('hide');
+}
+async function submitProductForm(){
+  if(!session) return;
+  const payload = {
+    name: $('fName').value.trim(),
+    description: $('fDescription').value.trim(),
+    price: $('fPrice').value === '' ? null : Number($('fPrice').value),
+    platform: $('fPlatform').value.trim(),
+    category: $('fCategory').value.trim(),
+    image_url: $('fImage').value.trim(),
+    affiliate_url: $('fLink').value.trim(),
+    status: $('fStatus').value
+  };
+  if(!payload.name){
+    $('formError').textContent = 'Informe o nome do produto.';
+    $('formError').classList.remove('hide');
+    return;
+  }
+  try {
+    const url = editingProductId
+      ? `${SUPABASE_URL}/rest/v1/products?id=eq.${editingProductId}`
+      : `${SUPABASE_URL}/rest/v1/products`;
+    const r = await fetch(url, {
+      method: editingProductId ? 'PATCH' : 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + session.access_token,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(payload)
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status + ' — ' + await r.text());
+    closeProductForm();
+    await loadAdminProducts();
+    await loadProducts();
+  } catch(err) {
+    $('formError').textContent = 'Erro ao salvar: ' + err.message;
+    $('formError').classList.remove('hide');
+  }
+}
+async function removeProduct(id){
+  if(!session) return;
+  if(!confirm('Excluir este produto definitivamente?')) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + session.access_token
+      }
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status + ' — ' + await r.text());
+    await loadAdminProducts();
+    await loadProducts();
+  } catch(err) {
+    alert('Erro ao excluir: ' + err.message);
+  }
+}
+
+loadProducts();
+</script>
+</body>
+</html>
