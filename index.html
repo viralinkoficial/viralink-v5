@@ -824,7 +824,7 @@ async function removeProduct(id){
 
 loadProducts();
 </script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://accounts.google.com/gsi/client"></script>
 
 <script>
 const BLOGGER_CLIENT_ID = "8081863130-q3qll2egcjbusnaq237uj64u0odpsufh.apps.googleusercontent.com";
@@ -833,6 +833,11 @@ const BLOGGER_SCOPE = "https://www.googleapis.com/auth/blogger";
 let bloggerTokenClient;
 
 function conectarBlogger() {
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    alert("A conexão do Google ainda não carregou. Atualize a página e tente novamente.");
+    return;
+  }
+
   bloggerTokenClient = google.accounts.oauth2.initTokenClient({
     client_id: BLOGGER_CLIENT_ID,
     scope: BLOGGER_SCOPE,
