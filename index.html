@@ -756,5 +756,41 @@ async function removeProduct(id){
 
 loadProducts();
 </script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+const BLOGGER_CLIENT_ID = "8081863130-q3qll2egcjbusnaq237uj64u0odpsufh.apps.googleusercontent.com";
+const BLOGGER_SCOPE = "https://www.googleapis.com/auth/blogger";
+
+let bloggerTokenClient;
+
+function conectarBlogger() {
+  bloggerTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: BLOGGER_CLIENT_ID,
+    scope: BLOGGER_SCOPE,
+    callback: async (response) => {
+      if (response.error) {
+        alert("Erro ao conectar com o Blogger.");
+        return;
+      }
+
+      localStorage.setItem("blogger_access_token", response.access_token);
+
+      const status = document.getElementById("bloggerStatus");
+      if (status) {
+        status.textContent = "Conectado";
+        status.classList.remove("warn");
+        status.classList.add("ok");
+      }
+
+      alert("Blogger conectado com sucesso! 🚀");
+    }
+  });
+
+  bloggerTokenClient.requestAccessToken();
+}
+
+document.getElementById("btnConnectBlogger")?.addEventListener("click", conectarBlogger);
+</script>
 </body>
 </html>
