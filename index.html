@@ -577,22 +577,6 @@ function generateCampaign(){
 
   $('btnPublishSelected').disabled = false;
 }
-
-function publishSelected(){
-  const p = products.find(x=>String(x.id)===$('pubProduct').value);
-  const selected = [...document.querySelectorAll('.pubChannel input:checked')].map(x=>x.value);
-  if(!p || !selected.length) return;
-
-  const now = new Date().toLocaleString('pt-BR');
-  selected.forEach(ch => {
-    publicationHistory.unshift({
-      product: p.name,
-      channel: PUB_LABELS[ch],
-      status: 'Aguardando integração',
-      date: now
-    });
-  });
-
   async function publishSelected(){
   const p = products.find(x => String(x.id) === $('pubProduct').value);
   const selected = [...document.querySelectorAll('.pubChannel input:checked')].map(x => x.value);
