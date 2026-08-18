@@ -480,6 +480,37 @@ ${desc}
 ${link}`;
 }
 
+
+function buildBloggerPostHtml(p){
+  const name = escapeHtml(p.name || 'Produto');
+  const desc = escapeHtml(p.description || 'Confira os detalhes desta oferta.').replace(/\n/g, '<br>');
+  const price = p.price == null
+    ? 'Consulte o valor na oferta'
+    : 'R$ ' + Number(p.price).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const platform = escapeHtml(p.platform || 'loja parceira');
+  const link = escapeHtml(p.affiliate_url || '#');
+  const image = escapeHtml(p.image_url || fallbackImage());
+
+  return `
+    <div style="max-width:760px;margin:0 auto;font-family:Arial,sans-serif;line-height:1.65;color:#202124">
+      <p style="font-size:13px;color:#6b7280"><em>Este conteúdo contém link de afiliado. Podemos receber uma comissão sem custo adicional para você.</em></p>
+      <img src="${image}" alt="${name}" style="width:100%;max-height:520px;object-fit:contain;border-radius:12px;margin:12px 0 22px">
+      <h2 style="font-size:25px;margin-bottom:12px">${name}: vale a pena?</h2>
+      <p>${desc}</p>
+      <div style="background:#f5f3ff;border-left:5px solid #7c3aed;padding:16px;margin:22px 0;border-radius:8px">
+        <strong style="font-size:22px;color:#5b21b6">${price}</strong><br>
+        <span>Oferta encontrada via ${platform}. Preço e disponibilidade podem mudar.</span>
+      </div>
+      <p style="text-align:center;margin:28px 0">
+        <a href="${link}" target="_blank" rel="nofollow sponsored noopener"
+           style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;font-weight:bold;padding:15px 24px;border-radius:10px">
+          Ver oferta na Shopee →
+        </a>
+      </p>
+      <p style="font-size:13px;color:#6b7280">Confira os detalhes, avaliações, prazo e condições diretamente na página da oferta antes de comprar.</p>
+    </div>`;
+}
+
 function generateAI(){
   const p = products.find(x=>String(x.id)===$('aiProduct').value);
   if(!p){
@@ -635,7 +666,8 @@ throw new Error('Erro Blogger: ' + erroGoogle);
             id: blog.id
           },
           title: p.name,
-          content: texto.replace(/\n/g, '<br>')
+          content: buildBloggerPostHtml(p),
+          labels: [p.category, p.platform, 'Ofertas'].filter(Boolean)
         })
       }
     );
