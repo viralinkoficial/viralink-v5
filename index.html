@@ -606,7 +606,9 @@ function generateCampaign(){
     );
 
     if(!blogsResponse.ok){
-      throw new Error('A autorização do Blogger expirou. Conecte novamente.');
+      const erroGoogle = await blogsResponse.text();
+console.error('ERRO REAL DO BLOGGER:', erroGoogle);
+throw new Error('Erro Blogger: ' + erroGoogle);
     }
 
     const blogsData = await blogsResponse.json();
