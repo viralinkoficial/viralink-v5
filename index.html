@@ -597,7 +597,7 @@ function generateCampaign(){
 
   try {
     const blogsResponse = await fetch(
-      'https://www.googleapis.com/blogger/v3/users/self/blogs?view=ADMIN',
+      'https://www.googleapis.com/blogger/v3/users/self/blogs',
       {
         headers: {
           Authorization: 'Bearer ' + token
