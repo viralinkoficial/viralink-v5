@@ -593,8 +593,90 @@ function publishSelected(){
     });
   });
 
-  renderPublicationHistory();
-  alert('Campanha registrada. A publicação real será ativada quando conectarmos as APIs oficiais.');
+  async function publishSelected(){
+  const p = products.find(x => String(x.id) === $('pubProduct').value);
+  const selected = [...document.querySelectorAll('.pubChannel input:checked')].map(x => x.value);
+
+  if(!p || !selected.length) return;
+
+  if(!selected.includes('blogger')){
+    alert('Por enquanto, selecione o Blogger para a publicação real.');
+    return;
+  }
+
+  const token = localStorage.getItem('blogger_access_token');
+
+  if(!token){
+    alert('Conecte o Blogger primeiro em Integrações.');
+    return;
+  }
+
+  try {
+    const blogsResponse = await fetch(
+      'https://www.googleapis.com/blogger/v3/users/self/blogs?view=ADMIN',
+      {
+        headers: {
+          Authorization: 'Bearer ' + token
+        }
+      }
+    );
+
+    if(!blogsResponse.ok){
+      throw new Error('A autorização do Blogger expirou. Conecte novamente.');
+    }
+
+    const blogsData = await blogsResponse.json();
+
+    if(!blogsData.items || !blogsData.items.length){
+      throw new Error('Nenhum blog foi encontrado nesta conta.');
+    }
+
+    const blog = blogsData.items[0];
+
+    const texto = publicationContent(p, 'blogger');
+
+    const postResponse = await fetch(
+      `https://www.googleapis.com/blogger/v3/blogs/${blog.id}/posts/`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          kind: 'blogger#post',
+          blog: {
+            id: blog.id
+          },
+          title: p.name,
+          content: texto.replace(/\n/g, '<br>')
+        })
+      }
+    );
+
+    if(!postResponse.ok){
+      throw new Error(await postResponse.text());
+    }
+
+    const post = await postResponse.json();
+
+    const now = new Date().toLocaleString('pt-BR');
+
+    publicationHistory.unshift({
+      product: p.name,
+      channel: 'Blogger',
+      status: 'Publicado ✅',
+      date: now
+    });
+
+    renderPublicationHistory();
+
+    alert('🚀 Publicado no Blogger com sucesso!');
+
+  } catch(err){
+    console.error(err);
+    alert('Erro ao publicar no Blogger: ' + err.message);
+  }
 }
 
 function renderPublicationHistory(){
