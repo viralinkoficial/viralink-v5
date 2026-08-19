@@ -202,8 +202,8 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
     </div>
 
     <div class="note">
-      <b>Modo seguro:</b> esta V5 prepara as publicações e o histórico, mas ainda não envia para APIs externas.
-      O primeiro canal que conectaremos de verdade será o Blogger.
+      <b>Modo assistido:</b> Instagram, Facebook, TikTok e WhatsApp já podem receber o conteúdo preparado.
+      O VIRALINK copia a legenda, abre o canal escolhido e deixa apenas a confirmação final para você.
     </div>
   </div>
 
@@ -228,10 +228,10 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
   <p id="bloggerStatus" class="pubStatus warn">Não conectado</p>
   <button class="btn secondary" id="btnConnectBlogger">🔗 Conectar Blogger</button>
 </div>
-    <div class="card"><h3>📸 Instagram</h3><p class="pubStatus warn">Não conectado</p></div>
-    <div class="card"><h3>📘 Facebook</h3><p class="pubStatus warn">Não conectado</p></div>
-    <div class="card"><h3>🎬 TikTok</h3><p class="pubStatus warn">Não conectado</p></div>
-    <div class="card"><h3>💬 WhatsApp</h3><p class="pubStatus warn">Não conectado</p></div>
+    <div class="card"><h3>📸 Instagram</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
+    <div class="card"><h3>📘 Facebook</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
+    <div class="card"><h3>🎬 TikTok</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
+    <div class="card"><h3>💬 WhatsApp</h3><p class="pubStatus ok">Compartilhamento ativo</p><button class="btn small" onclick="showPage('publications')">Criar mensagem</button></div>
     <div class="card"><h3>📊 Cliques</h3><p class="muted">Próxima etapa</p></div>
   </div>
 </section>
@@ -600,101 +600,79 @@ function generateCampaign(){
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
         <h3 style="margin:0">${PUB_LABELS[ch]}</h3>
-        <span class="pubStatus warn">Aguardando integração</span>
+        <span class="pubStatus ${ch === 'blogger' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : 'Modo assistido'}</span>
       </div>
       <div class="aiout pubPreview" style="margin-top:12px">${escapeHtml(publicationContent(p,ch))}</div>
+      ${ch === 'blogger' ? '' : `
+        <div class="row" style="margin-top:12px">
+          <button class="btn green small" onclick="assistPublish('${ch}')">📋 Copiar e abrir ${PUB_LABELS[ch]}</button>
+          <button class="btn secondary small" onclick="openPublicationImage()">🖼️ Abrir imagem</button>
+        </div>`}
     </div>
   `).join('');
 
   $('btnPublishSelected').disabled = false;
 }
-  async function publishSelected(){
+  function copyPublicationText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  return Promise.resolve();
+}
+
+function openPublicationImage(){
+  const p = products.find(x => String(x.id) === $('pubProduct').value);
+  if(!p || !p.image_url) return alert('Este produto ainda não possui imagem cadastrada.');
+  window.open(p.image_url, '_blank', 'noopener');
+}
+
+async function assistPublish(channel){
+  const p = products.find(x => String(x.id) === $('pubProduct').value);
+  if(!p) return alert('Selecione um produto.');
+  const text = publicationContent(p, channel);
+  try { await copyPublicationText(text); }
+  catch(e) { return alert('Não foi possível copiar automaticamente. Selecione o texto da prévia e copie manualmente.'); }
+  const urls = {
+    instagram: 'https://www.instagram.com/',
+    facebook: 'https://www.facebook.com/',
+    tiktok: 'https://www.tiktok.com/upload',
+    whatsapp: 'https://wa.me/?text=' + encodeURIComponent(text)
+  };
+  publicationHistory.unshift({product:p.name,channel:PUB_LABELS[channel]||channel,status:'Legenda copiada ✅',date:new Date().toLocaleString('pt-BR')});
+  renderPublicationHistory();
+  alert('Legenda copiada! O canal será aberto agora. Escolha a imagem ou vídeo e confirme a publicação.');
+  window.open(urls[channel], '_blank', 'noopener');
+}
+
+async function publishSelected(){
   const p = products.find(x => String(x.id) === $('pubProduct').value);
   const selected = [...document.querySelectorAll('.pubChannel input:checked')].map(x => x.value);
-
   if(!p || !selected.length) return;
-
-  if(!selected.includes('blogger')){
-    alert('Por enquanto, selecione o Blogger para a publicação real.');
-    return;
+  const assisted = selected.filter(ch => ch !== 'blogger');
+  if(assisted.length){
+    await assistPublish(assisted[0]);
+    if(assisted.length > 1) alert('O primeiro canal assistido foi aberto. Use “Copiar e abrir” em cada cartão para publicar nos demais.');
   }
-
+  if(!selected.includes('blogger')) return;
   const token = localStorage.getItem('blogger_access_token');
-
-  if(!token){
-    alert('Conecte o Blogger primeiro em Integrações.');
-    return;
-  }
-
+  if(!token){ alert('Para publicar também no Blogger, conecte-o primeiro em Integrações.'); return; }
   try {
-    const blogsResponse = await fetch(
-      'https://www.googleapis.com/blogger/v3/users/self/blogs',
-      {
-        headers: {
-          Authorization: 'Bearer ' + token
-        }
-      }
-    );
-
-    if(!blogsResponse.ok){
-      const erroGoogle = await blogsResponse.text();
-console.error('ERRO REAL DO BLOGGER:', erroGoogle);
-throw new Error('Erro Blogger: ' + erroGoogle);
-    }
-
+    const blogsResponse = await fetch('https://www.googleapis.com/blogger/v3/users/self/blogs',{headers:{Authorization:'Bearer '+token}});
+    if(!blogsResponse.ok) throw new Error('Erro Blogger: '+await blogsResponse.text());
     const blogsData = await blogsResponse.json();
-
-    if(!blogsData.items || !blogsData.items.length){
-      throw new Error('Nenhum blog foi encontrado nesta conta.');
-    }
-
+    if(!blogsData.items || !blogsData.items.length) throw new Error('Nenhum blog foi encontrado nesta conta.');
     const blog = blogsData.items[0];
-
-    const texto = publicationContent(p, 'blogger');
-
-    const postResponse = await fetch(
-      `https://www.googleapis.com/blogger/v3/blogs/${blog.id}/posts/`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          kind: 'blogger#post',
-          blog: {
-            id: blog.id
-          },
-          title: p.name,
-          content: buildBloggerPostHtml(p),
-          labels: [p.category, p.platform, 'Ofertas'].filter(Boolean)
-        })
-      }
-    );
-
-    if(!postResponse.ok){
-      throw new Error(await postResponse.text());
-    }
-
-    const post = await postResponse.json();
-
-    const now = new Date().toLocaleString('pt-BR');
-
-    publicationHistory.unshift({
-      product: p.name,
-      channel: 'Blogger',
-      status: 'Publicado ✅',
-      date: now
+    const postResponse = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${blog.id}/posts/`,{
+      method:'POST',
+      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({kind:'blogger#post',blog:{id:blog.id},title:p.name,content:buildBloggerPostHtml(p),labels:[p.category,p.platform,'Ofertas'].filter(Boolean)})
     });
-
+    if(!postResponse.ok) throw new Error(await postResponse.text());
+    publicationHistory.unshift({product:p.name,channel:'Blogger',status:'Publicado ✅',date:new Date().toLocaleString('pt-BR')});
     renderPublicationHistory();
-
     alert('🚀 Publicado no Blogger com sucesso!');
-
-  } catch(err){
-    console.error(err);
-    alert('Erro ao publicar no Blogger: ' + err.message);
-  }
+  } catch(err){ console.error(err); alert('Erro ao publicar no Blogger: '+err.message); }
 }
 
 function renderPublicationHistory(){
