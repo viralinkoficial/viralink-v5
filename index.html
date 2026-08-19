@@ -190,7 +190,8 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
         <label class="pubChannel"><input type="checkbox" value="blogger" checked> ✍️ Blogger</label>
         <label class="pubChannel"><input type="checkbox" value="instagram"> 📸 Instagram</label>
         <label class="pubChannel"><input type="checkbox" value="facebook"> 📘 Facebook</label>
-        <label class="pubChannel"><input type="checkbox" value="tiktok"> 🎬 TikTok/Shorts</label>
+        <label class="pubChannel"><input type="checkbox" value="tiktok"> 🎬 TikTok</label>
+        <label class="pubChannel"><input type="checkbox" value="youtube"> ▶️ YouTube Shorts</label>
         <label class="pubChannel"><input type="checkbox" value="whatsapp"> 💬 WhatsApp</label>
       </div>
     </div>
@@ -202,8 +203,8 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
     </div>
 
     <div class="note">
-      <b>Modo seguro:</b> esta V5 prepara as publicações e o histórico, mas ainda não envia para APIs externas.
-      O primeiro canal que conectaremos de verdade será o Blogger.
+      <b>Modo assistido:</b> Instagram, Facebook, TikTok e WhatsApp já podem receber o conteúdo preparado.
+      O VIRALINK copia a legenda, abre o canal escolhido e deixa apenas a confirmação final para você.
     </div>
   </div>
 
@@ -228,10 +229,11 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
   <p id="bloggerStatus" class="pubStatus warn">Não conectado</p>
   <button class="btn secondary" id="btnConnectBlogger">🔗 Conectar Blogger</button>
 </div>
-    <div class="card"><h3>📸 Instagram</h3><p class="pubStatus warn">Não conectado</p></div>
-    <div class="card"><h3>📘 Facebook</h3><p class="pubStatus warn">Não conectado</p></div>
-    <div class="card"><h3>🎬 TikTok</h3><p class="pubStatus warn">Não conectado</p></div>
-    <div class="card"><h3>💬 WhatsApp</h3><p class="pubStatus warn">Não conectado</p></div>
+    <div class="card"><h3>📸 Instagram</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
+    <div class="card"><h3>📘 Facebook</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
+    <div class="card"><h3>🎬 TikTok</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
+    <div class="card"><h3>▶️ YouTube Shorts</h3><p id="youtubeStatus" class="pubStatus warn">Não conectado</p><button class="btn small secondary" id="btnConnectYoutube">🔗 Conectar YouTube</button></div>
+    <div class="card"><h3>💬 WhatsApp</h3><p class="pubStatus ok">Compartilhamento ativo</p><button class="btn small" onclick="showPage('publications')">Criar mensagem</button></div>
     <div class="card"><h3>📊 Cliques</h3><p class="muted">Próxima etapa</p></div>
   </div>
 </section>
@@ -550,7 +552,8 @@ const PUB_LABELS = {
   blogger: 'Blogger',
   instagram: 'Instagram',
   facebook: 'Facebook',
-  tiktok: 'TikTok/Shorts',
+  tiktok: 'TikTok',
+  youtube: 'YouTube Shorts',
   whatsapp: 'WhatsApp'
 };
 
@@ -565,6 +568,16 @@ function fillPublications(){
 }
 
 function publicationContent(p, channel){
+  if(channel === 'youtube'){
+    return `${p.name || 'Oferta'} #Shorts
+
+${p.description || 'Confira esta oferta.'}
+
+🛍️ Link da oferta:
+${p.affiliate_url || 'link em breve'}
+
+${aiHashtags(p)} #Shorts`;
+  }
   if(channel === 'facebook'){
     const price = aiPriceText(p);
     return `🔥 ${p.name}
@@ -600,101 +613,132 @@ function generateCampaign(){
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
         <h3 style="margin:0">${PUB_LABELS[ch]}</h3>
-        <span class="pubStatus warn">Aguardando integração</span>
+        <span class="pubStatus ${ch === 'blogger' || ch === 'youtube' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : ch === 'youtube' ? 'Envio privado de teste' : 'Modo assistido'}</span>
       </div>
       <div class="aiout pubPreview" style="margin-top:12px">${escapeHtml(publicationContent(p,ch))}</div>
+      ${ch === 'youtube' ? `
+        <div class="field" style="margin-top:12px">
+          <label>Vídeo vertical do Short</label>
+          <input id="youtubeVideoFile" type="file" accept="video/*">
+        </div>
+        <button class="btn green small" onclick="uploadYoutubeShort()">▶️ Enviar Short privado</button>
+        <div id="youtubeUploadState" class="muted" style="margin-top:9px"></div>
+      ` : ch === 'blogger' ? '' : `
+        <div class="row" style="margin-top:12px">
+          <button class="btn green small" onclick="assistPublish('${ch}')">📋 Copiar e abrir ${PUB_LABELS[ch]}</button>
+          <button class="btn secondary small" onclick="openPublicationImage()">🖼️ Abrir imagem</button>
+        </div>`}
     </div>
   `).join('');
 
   $('btnPublishSelected').disabled = false;
 }
-  async function publishSelected(){
+  function copyPublicationText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  return Promise.resolve();
+}
+
+function openPublicationImage(){
   const p = products.find(x => String(x.id) === $('pubProduct').value);
-  const selected = [...document.querySelectorAll('.pubChannel input:checked')].map(x => x.value);
+  if(!p || !p.image_url) return alert('Este produto ainda não possui imagem cadastrada.');
+  window.open(p.image_url, '_blank', 'noopener');
+}
 
-  if(!p || !selected.length) return;
+async function assistPublish(channel){
+  const p = products.find(x => String(x.id) === $('pubProduct').value);
+  if(!p) return alert('Selecione um produto.');
+  const text = publicationContent(p, channel);
+  try { await copyPublicationText(text); }
+  catch(e) { return alert('Não foi possível copiar automaticamente. Selecione o texto da prévia e copie manualmente.'); }
+  const urls = {
+    instagram: 'https://www.instagram.com/',
+    facebook: 'https://www.facebook.com/',
+    tiktok: 'https://www.tiktok.com/upload',
+    whatsapp: 'https://wa.me/?text=' + encodeURIComponent(text)
+  };
+  publicationHistory.unshift({product:p.name,channel:PUB_LABELS[channel]||channel,status:'Legenda copiada ✅',date:new Date().toLocaleString('pt-BR')});
+  renderPublicationHistory();
+  alert('Legenda copiada! O canal será aberto agora. Escolha a imagem ou vídeo e confirme a publicação.');
+  window.open(urls[channel], '_blank', 'noopener');
+}
 
-  if(!selected.includes('blogger')){
-    alert('Por enquanto, selecione o Blogger para a publicação real.');
-    return;
-  }
-
-  const token = localStorage.getItem('blogger_access_token');
-
-  if(!token){
-    alert('Conecte o Blogger primeiro em Integrações.');
-    return;
-  }
-
+async function uploadYoutubeShort(){
+  const p = products.find(x => String(x.id) === $('pubProduct').value);
+  const input = $('youtubeVideoFile');
+  const state = $('youtubeUploadState');
+  const token = localStorage.getItem('youtube_access_token');
+  if(!token) return alert('Conecte o YouTube primeiro em Integrações.');
+  if(!p || !input || !input.files || !input.files[0]) return alert('Escolha o vídeo vertical do Short.');
+  const file = input.files[0];
+  state.textContent = 'Preparando envio…';
+  const metadata = {
+    snippet: {
+      title: ((p.name || 'Oferta') + ' #Shorts').slice(0,100),
+      description: publicationContent(p,'youtube'),
+      tags: ['Shorts','oferta','achadinhos'].filter(Boolean),
+      categoryId: '22'
+    },
+    status: { privacyStatus: 'private', selfDeclaredMadeForKids: false }
+  };
   try {
-    const blogsResponse = await fetch(
-      'https://www.googleapis.com/blogger/v3/users/self/blogs',
-      {
-        headers: {
-          Authorization: 'Bearer ' + token
-        }
-      }
-    );
-
-    if(!blogsResponse.ok){
-      const erroGoogle = await blogsResponse.text();
-console.error('ERRO REAL DO BLOGGER:', erroGoogle);
-throw new Error('Erro Blogger: ' + erroGoogle);
-    }
-
-    const blogsData = await blogsResponse.json();
-
-    if(!blogsData.items || !blogsData.items.length){
-      throw new Error('Nenhum blog foi encontrado nesta conta.');
-    }
-
-    const blog = blogsData.items[0];
-
-    const texto = publicationContent(p, 'blogger');
-
-    const postResponse = await fetch(
-      `https://www.googleapis.com/blogger/v3/blogs/${blog.id}/posts/`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          kind: 'blogger#post',
-          blog: {
-            id: blog.id
-          },
-          title: p.name,
-          content: buildBloggerPostHtml(p),
-          labels: [p.category, p.platform, 'Ofertas'].filter(Boolean)
-        })
-      }
-    );
-
-    if(!postResponse.ok){
-      throw new Error(await postResponse.text());
-    }
-
-    const post = await postResponse.json();
-
-    const now = new Date().toLocaleString('pt-BR');
-
-    publicationHistory.unshift({
-      product: p.name,
-      channel: 'Blogger',
-      status: 'Publicado ✅',
-      date: now
+    const init = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',{
+      method:'POST',
+      headers:{
+        Authorization:'Bearer '+token,
+        'Content-Type':'application/json; charset=UTF-8',
+        'X-Upload-Content-Length':String(file.size),
+        'X-Upload-Content-Type':file.type || 'video/mp4'
+      },
+      body:JSON.stringify(metadata)
     });
-
+    if(!init.ok) throw new Error(await init.text());
+    const uploadUrl = init.headers.get('Location');
+    if(!uploadUrl) throw new Error('O YouTube não devolveu o endereço de envio.');
+    state.textContent = 'Enviando vídeo… aguarde e não feche esta página.';
+    const sent = await fetch(uploadUrl,{method:'PUT',headers:{'Content-Type':file.type || 'video/mp4'},body:file});
+    if(!sent.ok) throw new Error(await sent.text());
+    const video = await sent.json();
+    state.innerHTML = 'Enviado como privado ✅ ' + (video.id ? '<a style="color:#c084fc" target="_blank" rel="noopener" href="https://studio.youtube.com/video/'+encodeURIComponent(video.id)+'/edit">Abrir no YouTube Studio</a>' : '');
+    publicationHistory.unshift({product:p.name,channel:'YouTube Shorts',status:'Enviado privado ✅',date:new Date().toLocaleString('pt-BR')});
     renderPublicationHistory();
-
-    alert('🚀 Publicado no Blogger com sucesso!');
-
   } catch(err){
     console.error(err);
-    alert('Erro ao publicar no Blogger: ' + err.message);
+    state.textContent = 'Erro no envio: '+err.message;
+    if(String(err.message).includes('401')) localStorage.removeItem('youtube_access_token');
   }
+}
+
+async function publishSelected(){
+  const p = products.find(x => String(x.id) === $('pubProduct').value);
+  const selected = [...document.querySelectorAll('.pubChannel input:checked')].map(x => x.value);
+  if(!p || !selected.length) return;
+  const assisted = selected.filter(ch => ch !== 'blogger' && ch !== 'youtube');
+  if(assisted.length){
+    await assistPublish(assisted[0]);
+    if(assisted.length > 1) alert('O primeiro canal assistido foi aberto. Use “Copiar e abrir” em cada cartão para publicar nos demais.');
+  }
+  if(!selected.includes('blogger')) return;
+  const token = localStorage.getItem('blogger_access_token');
+  if(!token){ alert('Para publicar também no Blogger, conecte-o primeiro em Integrações.'); return; }
+  try {
+    const blogsResponse = await fetch('https://www.googleapis.com/blogger/v3/users/self/blogs',{headers:{Authorization:'Bearer '+token}});
+    if(!blogsResponse.ok) throw new Error('Erro Blogger: '+await blogsResponse.text());
+    const blogsData = await blogsResponse.json();
+    if(!blogsData.items || !blogsData.items.length) throw new Error('Nenhum blog foi encontrado nesta conta.');
+    const blog = blogsData.items[0];
+    const postResponse = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${blog.id}/posts/`,{
+      method:'POST',
+      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({kind:'blogger#post',blog:{id:blog.id},title:p.name,content:buildBloggerPostHtml(p),labels:[p.category,p.platform,'Ofertas'].filter(Boolean)})
+    });
+    if(!postResponse.ok) throw new Error(await postResponse.text());
+    publicationHistory.unshift({product:p.name,channel:'Blogger',status:'Publicado ✅',date:new Date().toLocaleString('pt-BR')});
+    renderPublicationHistory();
+    alert('🚀 Publicado no Blogger com sucesso!');
+  } catch(err){ console.error(err); alert('Erro ao publicar no Blogger: '+err.message); }
 }
 
 function renderPublicationHistory(){
@@ -861,8 +905,10 @@ loadProducts();
 <script>
 const BLOGGER_CLIENT_ID = "8081863130-q3qll2egcjbusnaq237uj64u0odpsufh.apps.googleusercontent.com";
 const BLOGGER_SCOPE = "https://www.googleapis.com/auth/blogger";
+const YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube.upload";
 
 let bloggerTokenClient;
+let youtubeTokenClient;
 
 function conectarBlogger() {
   if (!window.google || !google.accounts || !google.accounts.oauth2) {
@@ -895,7 +941,31 @@ function conectarBlogger() {
   bloggerTokenClient.requestAccessToken();
 }
 
+function conectarYoutube() {
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    alert("A conexão do Google ainda não carregou. Atualize a página e tente novamente.");
+    return;
+  }
+  youtubeTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: BLOGGER_CLIENT_ID,
+    scope: YOUTUBE_SCOPE,
+    callback: (response) => {
+      if (response.error) return alert("Erro ao conectar com o YouTube: " + response.error);
+      localStorage.setItem("youtube_access_token", response.access_token);
+      const status = document.getElementById("youtubeStatus");
+      if(status){ status.textContent="Conectado"; status.classList.remove("warn"); status.classList.add("ok"); }
+      alert("YouTube conectado! Agora selecione um vídeo em Publicações.");
+    }
+  });
+  youtubeTokenClient.requestAccessToken();
+}
+
 document.getElementById("btnConnectBlogger")?.addEventListener("click", conectarBlogger);
+document.getElementById("btnConnectYoutube")?.addEventListener("click", conectarYoutube);
+if(localStorage.getItem("youtube_access_token")){
+  const status=document.getElementById("youtubeStatus");
+  if(status){ status.textContent="Conectado"; status.classList.remove("warn"); status.classList.add("ok"); }
+}
 </script>
 </body>
 </html>
