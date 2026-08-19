@@ -568,6 +568,16 @@ function fillPublications(){
 }
 
 function publicationContent(p, channel){
+  if(channel === 'tiktok'){
+    return `🔥 ${p.name || 'Achadinho do dia'}
+
+${p.description || 'Confira esta oferta.'}
+
+🛍️ Link da oferta:
+${p.affiliate_url || 'link em breve'}
+
+${aiHashtags(p)} #TikTok #TikTokMeFezComprar #Achadinhos #Oferta`;
+  }
   if(channel === 'youtube'){
     return `${p.name || 'Oferta'} #Shorts
 
@@ -613,7 +623,7 @@ function generateCampaign(){
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
         <h3 style="margin:0">${PUB_LABELS[ch]}</h3>
-        <span class="pubStatus ${ch === 'blogger' || ch === 'youtube' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : ch === 'youtube' ? 'Publicação automática' : 'Modo assistido'}</span>
+        <span class="pubStatus ${ch === 'blogger' || ch === 'youtube' || ch === 'tiktok' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : ch === 'youtube' ? 'Publicação automática' : ch === 'tiktok' ? 'Vídeo automático' : 'Modo assistido'}</span>
       </div>
       <div class="aiout pubPreview" style="margin-top:12px">${escapeHtml(publicationContent(p,ch))}</div>
       ${ch === 'youtube' ? `
@@ -630,6 +640,12 @@ function generateCampaign(){
           <button class="btn secondary small" onclick="uploadYoutubeShort()">▶️ Enviar vídeo escolhido</button>
         </details>
         <div id="youtubeUploadState" class="muted" style="margin-top:9px"></div>
+      ` : ch === 'tiktok' ? `
+        <div class="note" style="margin-top:12px">
+          <b>Criação automática:</b> o VIRALINK cria um vídeo vertical de 15 segundos com música instrumental original, textos do produto e hashtags.
+        </div>
+        <button class="btn green" onclick="generateTikTokVideo()">🎵 Criar vídeo e abrir TikTok</button>
+        <div id="tiktokVideoState" class="muted" style="margin-top:9px"></div>
       ` : ch === 'blogger' ? '' : `
         <div class="row" style="margin-top:12px">
           <button class="btn green small" onclick="assistPublish('${ch}')">📋 Copiar e abrir ${PUB_LABELS[ch]}</button>
@@ -685,7 +701,7 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines){
   lines.forEach((v,i)=>ctx.fillText(v,x,y+i*lineHeight));
 }
 
-async function createProductShortBlob(p, state){
+async function createProductShortBlob(p, state, platform='youtube'){
   if(!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) throw new Error('Este navegador não consegue criar o vídeo. Use o Chrome atualizado.');
   if(!p.image_url) throw new Error('Este produto ainda não possui imagem.');
   state.textContent='Carregando a imagem do produto…';
@@ -700,10 +716,15 @@ async function createProductShortBlob(p, state){
   const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
   const dest=audioCtx.createMediaStreamDestination();
   const master=audioCtx.createGain(); master.gain.value=0.035; master.connect(dest);
-  [220,330].forEach((freq,i)=>{
+  const melody=[261.63,329.63,392,523.25,392,329.63,293.66,349.23,440,587.33,440,349.23,261.63,329.63,392];
+  melody.forEach((freq,i)=>{
     const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain();
-    osc.type=i?'triangle':'sine'; osc.frequency.value=freq; gain.gain.value=i?0.35:0.55;
-    osc.connect(gain); gain.connect(master); osc.start(); osc.stop(audioCtx.currentTime+15.2);
+    const start=audioCtx.currentTime+i, end=start+0.92;
+    osc.type=i%3===0?'triangle':'sine'; osc.frequency.setValueAtTime(freq,start);
+    gain.gain.setValueAtTime(0.001,start);
+    gain.gain.exponentialRampToValueAtTime(0.36,start+0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001,end);
+    osc.connect(gain); gain.connect(master); osc.start(start); osc.stop(end);
   });
   const combined=new MediaStream([...videoStream.getVideoTracks(),...dest.stream.getAudioTracks()]);
   const supported=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(MediaRecorder.isTypeSupported);
@@ -748,7 +769,8 @@ async function createProductShortBlob(p, state){
         ctx.font='bold 42px Arial'; ctx.fillStyle='#ffffff'; ctx.fillText('CONFIRA A OFERTA',360,985);
         ctx.font='bold 31px Arial'; ctx.fillStyle='#fbbf24'; ctx.fillText('LINK NA DESCRIÇÃO',360,1045);
       }
-      ctx.font='bold 24px Arial'; ctx.fillStyle='#cbd5e1'; ctx.fillText('#Shorts  #Achadinhos  #Oferta',360,1168);
+      ctx.font='bold 24px Arial'; ctx.fillStyle='#cbd5e1';
+      ctx.fillText(platform==='tiktok' ? '#TikTok  #Achadinhos  #Oferta' : '#Shorts  #Achadinhos  #Oferta',360,1168);
       state.textContent='Criando o Short… '+Math.min(99,Math.round(progress*100))+'%';
       if(elapsed<duration) requestAnimationFrame(frame); else resolve();
     }
@@ -762,6 +784,31 @@ async function createProductShortBlob(p, state){
   imageBitmap.close();
   if(!blob.size) throw new Error('O vídeo criado ficou vazio.');
   return blob;
+}
+
+async function generateTikTokVideo(){
+  const p=products.find(x=>String(x.id)===$('pubProduct').value);
+  const state=$('tiktokVideoState');
+  if(!p) return alert('Selecione um produto.');
+  try{
+    const videoBlob=await createProductShortBlob(p,state,'tiktok');
+    state.textContent='Vídeo criado ✅ Baixando e copiando a legenda…';
+    const url=URL.createObjectURL(videoBlob);
+    const link=document.createElement('a');
+    link.href=url;
+    link.download='viralink-tiktok-'+String(p.name||'produto').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.webm';
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    await copyPublicationText(publicationContent(p,'tiktok'));
+    publicationHistory.unshift({product:p.name,channel:'TikTok',status:'Vídeo + legenda prontos ✅',date:new Date().toLocaleString('pt-BR')});
+    renderPublicationHistory();
+    state.textContent='Vídeo baixado e legenda copiada ✅ Abrindo o TikTok…';
+    alert('Vídeo criado com música, textos e hashtags! O arquivo foi baixado e a legenda foi copiada. Agora selecione o vídeo no TikTok e confirme.');
+    window.open('https://www.tiktok.com/upload','_blank','noopener');
+  }catch(err){
+    console.error(err);
+    state.textContent='Erro: '+err.message;
+  }
 }
 
 async function uploadYoutubeBlob(file,p,state){
@@ -807,7 +854,7 @@ async function generateAndUploadYoutubeShort(){
   const state=$('youtubeUploadState');
   if(!p) return alert('Selecione um produto.');
   try{
-    const videoBlob=await createProductShortBlob(p,state);
+    const videoBlob=await createProductShortBlob(p,state,'youtube');
     state.textContent='Vídeo criado ✅ Preparando publicação…';
     const video=await uploadYoutubeBlob(videoBlob,p,state);
     youtubeUploadSuccess(video,p,state);
