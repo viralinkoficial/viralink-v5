@@ -613,7 +613,7 @@ function generateCampaign(){
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
         <h3 style="margin:0">${PUB_LABELS[ch]}</h3>
-        <span class="pubStatus ${ch === 'blogger' || ch === 'youtube' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : ch === 'youtube' ? 'Envio privado de teste' : 'Modo assistido'}</span>
+        <span class="pubStatus ${ch === 'blogger' || ch === 'youtube' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : ch === 'youtube' ? 'Publicação automática' : 'Modo assistido'}</span>
       </div>
       <div class="aiout pubPreview" style="margin-top:12px">${escapeHtml(publicationContent(p,ch))}</div>
       ${ch === 'youtube' ? `
@@ -621,7 +621,7 @@ function generateCampaign(){
           <label>Vídeo vertical do Short</label>
           <input id="youtubeVideoFile" type="file" accept="video/*">
         </div>
-        <button class="btn green small" onclick="uploadYoutubeShort()">▶️ Enviar Short privado</button>
+        <button class="btn green small" onclick="uploadYoutubeShort()">▶️ Publicar Short agora</button>
         <div id="youtubeUploadState" class="muted" style="margin-top:9px"></div>
       ` : ch === 'blogger' ? '' : `
         <div class="row" style="margin-top:12px">
@@ -681,7 +681,7 @@ async function uploadYoutubeShort(){
       tags: ['Shorts','oferta','achadinhos'].filter(Boolean),
       categoryId: '22'
     },
-    status: { privacyStatus: 'private', selfDeclaredMadeForKids: false }
+    status: { privacyStatus: 'public', selfDeclaredMadeForKids: false }
   };
   try {
     const init = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',{
@@ -701,8 +701,8 @@ async function uploadYoutubeShort(){
     const sent = await fetch(uploadUrl,{method:'PUT',headers:{'Content-Type':file.type || 'video/mp4'},body:file});
     if(!sent.ok) throw new Error(await sent.text());
     const video = await sent.json();
-    state.innerHTML = 'Enviado como privado ✅ ' + (video.id ? '<a style="color:#c084fc" target="_blank" rel="noopener" href="https://studio.youtube.com/video/'+encodeURIComponent(video.id)+'/edit">Abrir no YouTube Studio</a>' : '');
-    publicationHistory.unshift({product:p.name,channel:'YouTube Shorts',status:'Enviado privado ✅',date:new Date().toLocaleString('pt-BR')});
+    state.innerHTML = 'Publicado ✅ ' + (video.id ? '<a style="color:#c084fc" target="_blank" rel="noopener" href="https://studio.youtube.com/video/'+encodeURIComponent(video.id)+'/edit">Abrir no YouTube Studio</a>' : '');
+    publicationHistory.unshift({product:p.name,channel:'YouTube Shorts',status:'Publicado ✅',date:new Date().toLocaleString('pt-BR')});
     renderPublicationHistory();
   } catch(err){
     console.error(err);
