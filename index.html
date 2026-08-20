@@ -826,8 +826,10 @@ function renderProductValidator(){
     const labels={ready:'Pronto',attention:'Atenção',blocked:'Bloqueado'};
     const classes={ready:'vReady',attention:'vAttention',blocked:'vBlocked'};
     const issues=a.issues.length?'<ul class="validationIssues">'+a.issues.map(i=>'<li>'+escapeHtml(i)+'</li>').join('')+'</ul>':'Nenhum problema encontrado';
-    const edit=isCEO()?'<button class="btn secondary small" onclick="openValidatorEditor(\''+String(a.p.id).replace(/'/g,'')+'\')">Editar</button>':'—';
-    return '<tr><td><b>'+escapeHtml(a.p.name||'Sem título')+'</b><br><span class="muted">'+escapeHtml(a.p.platform||'Sem plataforma')+'</span></td><td><b class="'+classes[a.status]+'">'+labels[a.status]+'</b></td><td>'+issues+'</td><td>'+edit+'</td></tr>';
+    const safeId=String(a.p.id).replace(/'/g,'');
+    const edit=isCEO()?'<button class="btn secondary small" onclick="openValidatorEditor(\''+safeId+'\')">Editar</button>':'—';
+    const fixTitle=isCEO()&&String(a.p.name||'').length>100?'<button class="btn small" style="margin-top:6px" onclick="confirmTitleCorrection(\''+safeId+'\')">✨ Corrigir título</button>':'';
+    return '<tr><td><b>'+escapeHtml(a.p.name||'Sem título')+'</b><br><span class="muted">'+escapeHtml(a.p.platform||'Sem plataforma')+'</span></td><td><b class="'+classes[a.status]+'">'+labels[a.status]+'</b></td><td>'+issues+'</td><td>'+edit+fixTitle+'</td></tr>';
   }).join(''):'<tr><td colspan="4" class="muted">Nenhum produto neste filtro.</td></tr>';
 }
 
@@ -861,6 +863,43 @@ async function runProductValidator(){
   const ready=source.map(analyzeProduct).filter(a=>a.status==='ready').length;
   state.textContent='Validação concluída ✅ '+ready+' produto(s) prontos para o Robô Central.';
   button.disabled=false;
+}
+
+
+function suggestShortTitle(value){
+  const clean=String(value||'').replace(/\s+/g,' ').trim();
+  if(clean.length<=100) return clean;
+  const preferred=clean
+    .replace(/\b(pronta entrega|frete grátis|promoção|oferta|lançamento)\b/gi,'')
+    .replace(/\s+/g,' ').trim();
+  if(preferred.length<=100) return preferred;
+  const cut=preferred.slice(0,100);
+  const lastSpace=cut.lastIndexOf(' ');
+  return (lastSpace>=70?cut.slice(0,lastSpace):cut).replace(/[,:;\-–]+$/,'').trim();
+}
+
+async function confirmTitleCorrection(id){
+  if(!isCEO()) return alert('Entre como CEO para corrigir títulos.');
+  const p=adminProducts.find(x=>String(x.id)===String(id))||products.find(x=>String(x.id)===String(id));
+  if(!p) return alert('Produto não encontrado.');
+  const suggestion=suggestShortTitle(p.name);
+  if(!suggestion||suggestion===p.name) return alert('Este título não precisa de correção.');
+  const approved=confirm('Título atual ('+String(p.name).length+' caracteres):\n\n'+p.name+'\n\nSugestão ('+suggestion.length+' caracteres):\n\n'+suggestion+'\n\nConfirmar esta alteração?');
+  if(!approved) return;
+  try{
+    const response=await fetch(SUPABASE_URL+'/rest/v1/products?id=eq.'+encodeURIComponent(id),{
+      method:'PATCH',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json','Prefer':'return=representation'},
+      body:JSON.stringify({name:suggestion})
+    });
+    if(!response.ok) throw new Error('HTTP '+response.status+' — '+await response.text());
+    await loadAdminProducts();
+    await loadProducts();
+    renderProductValidator();
+    alert('Título corrigido com sucesso.');
+  }catch(err){
+    alert('Não foi possível corrigir o título: '+err.message);
+  }
 }
 
 function openValidatorEditor(id){
