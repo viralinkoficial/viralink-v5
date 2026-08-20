@@ -79,7 +79,15 @@ body.ceoMode .productAdminBtns{display:flex}
 
 @media(max-width:950px){.app{grid-template-columns:1fr}.side{height:auto;position:static}.nav{display:flex;overflow:auto}.nav button{min-width:max-content}.grid4,.goalgrid,.actions,.importGrid{grid-template-columns:1fr}.main{padding:18px}}
 .legalFooter{margin:26px 0 8px;padding:18px;text-align:center;background:#0d1a2e;border:1px solid #25344f;border-radius:14px;color:#9fb0c9}.legalFooter strong{display:block;color:#f8fafc;margin-bottom:8px}.legalFooter a{color:#c4b5fd;margin:0 8px;white-space:nowrap}.robotChannels{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin:14px 0}.robotChannel{display:flex;gap:9px;align-items:center;background:#081525;border:1px solid #2a3b57;border-radius:11px;padding:11px}.robotTable{width:100%;border-collapse:collapse}.robotTable th,.robotTable td{padding:10px;border-bottom:1px solid #25344f;text-align:left;font-size:13px}.robotTable th{color:#c4b5fd}.robotTableWrap{overflow:auto;max-height:520px;border:1px solid #25344f;border-radius:12px;margin-top:14px}
-.validatorFilters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.validatorTable{width:100%;border-collapse:collapse}.validatorTable th,.validatorTable td{padding:10px;border-bottom:1px solid #25344f;text-align:left;font-size:13px;vertical-align:top}.validatorTable th{color:#c4b5fd}.validatorTableWrap{overflow:auto;max-height:560px;border:1px solid #25344f;border-radius:12px}.validationIssues{margin:5px 0 0;padding-left:18px;color:#b4c2d7}.validationIssues li{margin:2px 0}.vReady{color:#4ade80}.vAttention{color:#fde68a}.vBlocked{color:#fca5a5}</style>
+.validatorFilters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.validatorTable{width:100%;border-collapse:collapse}.validatorTable th,.validatorTable td{padding:10px;border-bottom:1px solid #25344f;text-align:left;font-size:13px;vertical-align:top}.validatorTable th{color:#c4b5fd}.validatorTableWrap{overflow:auto;max-height:560px;border:1px solid #25344f;border-radius:12px}.validationIssues{margin:5px 0 0;padding-left:18px;color:#b4c2d7}.validationIssues li{margin:2px 0}.vReady{color:#4ade80}.vAttention{color:#fde68a}.vBlocked{color:#fca5a5}
+.resultsGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.resultsTable{width:100%;border-collapse:collapse;margin-top:12px}
+.resultsTable th,.resultsTable td{padding:11px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+.resultsTable th{color:#c4b5fd}
+.resultBar{height:8px;background:#18263b;border-radius:999px;overflow:hidden;margin-top:6px}
+.resultBar span{display:block;height:100%;background:linear-gradient(90deg,#7c3aed,#22c55e)}
+@media(max-width:760px){.resultsGrid{grid-template-columns:1fr 1fr}.resultsTable{min-width:680px}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -89,10 +97,12 @@ body.ceoMode .productAdminBtns{display:flex}
     <button data-page="dashboard" class="active">🏠 Dashboard</button>
     <button data-page="products">🛍 Produtos</button>
     <button data-page="validator">✅ Validador</button>
+    <button data-page="results">📊 Resultados</button>
     <button data-page="shopeeImport">🟠 Importar Shopee</button>
     <button data-page="store">✨ Minha Vitrine</button>
     <button data-page="ai">✨ IA Creator</button>
-    <button data-page="robot">🤖 Robô Central</button>\n    <button data-page="publications">📤 Publicações</button>
+    <button data-page="robot">🤖 Robô Central</button>
+    <button data-page="publications">📤 Publicações</button>
     <button data-page="integrations">🔌 Integrações</button>
     <button data-page="login" id="navLogin">👤 Entrar / Conta</button>
   </div>
@@ -236,6 +246,37 @@ body.ceoMode .productAdminBtns{display:flex}
   <div id="aiOut" class="aiout">Selecione um produto.</div>
 </section>
 
+
+
+<section id="results" class="page hide">
+  <h1>📊 Centro de Resultados</h1>
+  <div class="sub">Acompanhe a preparação dos produtos e os dados realmente registrados pelo VIRALINK.</div>
+  <div class="resultsGrid">
+    <div class="card metric">Produtos ativos<b id="resultsProducts">0</b><span class="muted">Disponíveis no banco</span></div>
+    <div class="card metric">Aptos para publicar<b id="resultsReady">0</b><span class="muted">Sem bloqueios de dados</span></div>
+    <div class="card metric">Programações locais<b id="resultsScheduled">0</b><span class="muted">YouTube + Facebook neste aparelho</span></div>
+    <div class="card metric">Vendas confirmadas<b id="resultsSales">—</b><span class="muted">Aguardando integração de conversões</span></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="challengeTop">
+      <div><h2 style="margin:0">Saúde do catálogo</h2><div class="muted" id="resultsHealthText">Calculando...</div></div>
+      <button class="primary" onclick="renderResultsCenter()">↻ Atualizar</button>
+    </div>
+    <div class="resultBar"><span id="resultsHealthBar" style="width:0%"></span></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin-top:0">🏆 Produtos mais preparados</h2>
+    <div class="muted">Ranking por qualidade dos dados. Cliques e vendas aparecerão quando o rastreamento estiver conectado.</div>
+    <div style="overflow:auto"><table class="resultsTable">
+      <thead><tr><th>#</th><th>Produto</th><th>Plataforma</th><th>Qualidade</th><th>Status</th></tr></thead>
+      <tbody id="resultsRanking"></tbody>
+    </table></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin-top:0">Conexões de resultados</h2>
+    <div id="resultsConnections" class="muted"></div>
+  </div>
+</section>
 
 <section id="robot" class="page hide">
   <h1>🤖 Robô Central</h1>
@@ -409,6 +450,7 @@ function showPage(id){
   if(id==='ai') fillAI();
   if(id==='publications') fillPublications();
   if(id==='validator') renderProductValidator();
+  if(id==='results') renderResultsCenter();
   if(id==='shopeeImport') updateImportCount();
   if(id==='robot') loadCentralRobot();
 }
@@ -670,6 +712,45 @@ const validatorImageStatus=new Map();
 
 function validatorProducts(){
   return isCEO() && adminProducts.length ? adminProducts : products;
+}
+
+
+function resultsLocalCount(key){
+  try{
+    const value=JSON.parse(localStorage.getItem(key)||'[]');
+    return Array.isArray(value)?value.length:0;
+  }catch(_){return 0;}
+}
+
+function productQuality(p){
+  const result=analyzeProduct(p);
+  let score=100-result.blocked.length*30-result.warnings.length*10;
+  return {score:Math.max(0,score),status:result.status};
+}
+
+function renderResultsCenter(){
+  const list=Array.isArray(products)?products:[];
+  const ranked=list.map(p=>({product:p,...productQuality(p)})).sort((a,b)=>b.score-a.score);
+  const ready=ranked.filter(x=>x.status==='ready').length;
+  const health=list.length?Math.round(ranked.reduce((sum,x)=>sum+x.score,0)/list.length):0;
+  const scheduled=resultsLocalCount(YOUTUBE_SCHEDULED_KEY)+resultsLocalCount(FACEBOOK_SCHEDULED_KEY);
+  $('resultsProducts').textContent=list.length;
+  $('resultsReady').textContent=ready;
+  $('resultsScheduled').textContent=scheduled;
+  $('resultsSales').textContent='—';
+  $('resultsHealthText').textContent=health+'% de qualidade média • '+ready+' produto(s) aptos';
+  $('resultsHealthBar').style.width=health+'%';
+  $('resultsRanking').innerHTML=ranked.slice(0,20).map((x,index)=>{
+    const p=x.product;
+    const label=x.status==='ready'?'Pronto':x.status==='attention'?'Atenção':'Bloqueado';
+    return '<tr><td>'+(index+1)+'</td><td>'+escapeHtml(p.name||'Sem título')+'</td><td>'+escapeHtml(p.platform||'Não informada')+'</td><td>'+x.score+'%</td><td>'+label+'</td></tr>';
+  }).join('')||'<tr><td colspan="5" class="muted">Nenhum produto carregado.</td></tr>';
+  const youtube=!!localStorage.getItem('youtube_access_token');
+  const blogger=!!localStorage.getItem('blogger_access_token');
+  $('resultsConnections').innerHTML=
+    '<p>'+(youtube?'✅':'⚠️')+' YouTube: '+(youtube?'token encontrado neste aparelho':'token não encontrado neste aparelho')+'</p>'+
+    '<p>'+(blogger?'✅':'⚠️')+' Blogger: '+(blogger?'token encontrado neste aparelho':'token não encontrado neste aparelho')+'</p>'+
+    '<p>⏳ Cliques e vendas: aguardando a implantação do rastreamento no Supabase.</p>';
 }
 
 function validHttpsUrl(value){
