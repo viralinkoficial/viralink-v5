@@ -265,7 +265,8 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
     <div class="card"><h3>📘 Facebook</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
     <div class="card"><h3>🎬 TikTok</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
     <div class="card"><h3>▶️ YouTube Shorts</h3><p id="youtubeStatus" class="pubStatus warn">Não conectado</p><button class="btn small secondary" id="btnConnectYoutube">🔗 Conectar YouTube</button></div>
-    <div class="card"><h3>💬 WhatsApp</h3><p class="pubStatus ok">Compartilhamento ativo</p><button class="btn small" onclick="showPage('publications')">Criar mensagem</button></div>
+    <div class="card"><h3>💬 WhatsApp</h3><p class="pubStatus ok">Grupo VIRALINK conectado</p><button class="btn small" onclick="showPage('publications')">Enviar oferta ao grupo</button><br><br><a href="https://chat.whatsapp.com/Ieqw40h895jELUwiEp23KM" target="_blank" rel="noopener" style="color:#86efac">Abrir grupo de ofertas ↗</a></div>
+    <div class="card"><h3>📌 Pinterest</h3><p class="pubStatus warn">Aguardando conexão oficial</p><button class="btn small" onclick="showPage('publications')">Criar Pin</button></div>
     <div class="card"><h3>📊 Cliques</h3><p class="muted">Próxima etapa</p></div>
   </div>
 </section>
@@ -596,6 +597,8 @@ const PUB_LABELS = {
   ,pinterest: 'Pinterest'
 };
 
+const WHATSAPP_GROUP_INVITE = 'https://chat.whatsapp.com/Ieqw40h895jELUwiEp23KM';
+
 let publicationHistory = [];
 
 function fillPublications(){
@@ -688,7 +691,7 @@ function generateCampaign(){
         <div id="tiktokVideoState" class="muted" style="margin-top:9px"></div>
       ` : ch === 'blogger' ? '' : `
         <div class="row" style="margin-top:12px">
-          <button class="btn green small" onclick="assistPublish('${ch}')">${ch==='pinterest'?'📌 Criar imagem e abrir':'📋 Copiar e abrir'} ${PUB_LABELS[ch]}</button>
+          <button class="btn green small" onclick="assistPublish('${ch}')">${ch==='pinterest'?'📌 Criar imagem e abrir':ch==='whatsapp'?'💬 Enviar ao grupo VIRALINK':'📋 Copiar e abrir'} ${ch==='whatsapp'?'':PUB_LABELS[ch]}</button>
           <button class="btn secondary small" onclick="openPublicationImage()">🖼️ Abrir imagem</button>
         </div>`}
     </div>
@@ -720,12 +723,16 @@ async function assistPublish(channel){
     instagram: 'https://www.instagram.com/',
     facebook: 'https://www.facebook.com/',
     tiktok: 'https://www.tiktok.com/upload',
+    // O WhatsApp não permite escolher um grupo específico pela URL oficial.
+    // Abrimos o seletor de conversas com a mensagem pronta; basta tocar no grupo VIRALINK.
     whatsapp: 'https://wa.me/?text=' + encodeURIComponent(text),
     pinterest: 'https://www.pinterest.com/pin-builder/'
   };
   publicationHistory.unshift({product:p.name,channel:PUB_LABELS[channel]||channel,status:'Legenda copiada ✅',date:new Date().toLocaleString('pt-BR')});
   renderPublicationHistory();
-  alert('Legenda copiada! O canal será aberto agora. Escolha a imagem ou vídeo e confirme a publicação.');
+  alert(channel==='whatsapp'
+    ? 'Mensagem pronta! No WhatsApp, selecione o grupo VIRALINK e confirme o envio.'
+    : 'Legenda copiada! O canal será aberto agora. Escolha a imagem ou vídeo e confirme a publicação.');
   window.open(urls[channel], '_blank', 'noopener');
 }
 
@@ -950,7 +957,9 @@ async function publishSelected(){
     const postResponse = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${blog.id}/posts/`,{
       method:'POST',
       headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-      body:JSON.stringify({kind:'blogger#post',blog:{id:blog.id},title:p.name,content:buildBloggerPostHtml(p),labels:[p.category,p.platform,'Ofertas'].filter(Boolean)})
+      // Em posts.insert, blog e kind não devem ser reenviados no corpo.
+      // Esses campos de resposta causavam "Request contains an invalid argument".
+      body:JSON.stringify({title:p.name,content:buildBloggerPostHtml(p),labels:[p.category,p.platform,'Ofertas'].filter(Boolean).map(x=>String(x).slice(0,200))})
     });
     if(!postResponse.ok) throw new Error(await postResponse.text());
     publicationHistory.unshift({product:p.name,channel:'Blogger',status:'Publicado ✅',date:new Date().toLocaleString('pt-BR')});
