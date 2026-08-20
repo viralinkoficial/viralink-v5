@@ -78,7 +78,8 @@ body.ceoMode .productAdminBtns{display:flex}
 @media(max-width:700px){.historyItem{grid-template-columns:1fr}.pubPreviewGrid{grid-template-columns:1fr}}
 
 @media(max-width:950px){.app{grid-template-columns:1fr}.side{height:auto;position:static}.nav{display:flex;overflow:auto}.nav button{min-width:max-content}.grid4,.goalgrid,.actions,.importGrid{grid-template-columns:1fr}.main{padding:18px}}
-.legalFooter{margin:26px 0 8px;padding:18px;text-align:center;background:#0d1a2e;border:1px solid #25344f;border-radius:14px;color:#9fb0c9}.legalFooter strong{display:block;color:#f8fafc;margin-bottom:8px}.legalFooter a{color:#c4b5fd;margin:0 8px;white-space:nowrap}</style>
+.legalFooter{margin:26px 0 8px;padding:18px;text-align:center;background:#0d1a2e;border:1px solid #25344f;border-radius:14px;color:#9fb0c9}.legalFooter strong{display:block;color:#f8fafc;margin-bottom:8px}.legalFooter a{color:#c4b5fd;margin:0 8px;white-space:nowrap}.robotChannels{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin:14px 0}.robotChannel{display:flex;gap:9px;align-items:center;background:#081525;border:1px solid #2a3b57;border-radius:11px;padding:11px}.robotTable{width:100%;border-collapse:collapse}.robotTable th,.robotTable td{padding:10px;border-bottom:1px solid #25344f;text-align:left;font-size:13px}.robotTable th{color:#c4b5fd}.robotTableWrap{overflow:auto;max-height:520px;border:1px solid #25344f;border-radius:12px;margin-top:14px}
+</style>
 </head>
 <body>
 <div class="app">
@@ -90,7 +91,7 @@ body.ceoMode .productAdminBtns{display:flex}
     <button data-page="shopeeImport">🟠 Importar Shopee</button>
     <button data-page="store">✨ Minha Vitrine</button>
     <button data-page="ai">✨ IA Creator</button>
-    <button data-page="publications">📤 Publicações</button>
+    <button data-page="robot">🤖 Robô Central</button>\n    <button data-page="publications">📤 Publicações</button>
     <button data-page="integrations">🔌 Integrações</button>
     <button data-page="login" id="navLogin">👤 Entrar / Conta</button>
   </div>
@@ -207,6 +208,45 @@ body.ceoMode .productAdminBtns{display:flex}
   <div id="aiOut" class="aiout">Selecione um produto.</div>
 </section>
 
+
+<section id="robot" class="page hide">
+  <h1>🤖 Robô Central</h1>
+  <div class="sub">Planeje campanhas, distribua produtos sem repetição e acompanhe todos os canais em uma única fila.</div>
+  <div class="grid4" style="margin-top:16px">
+    <div class="card metric">Pendentes<b id="robotPending">0</b><span class="muted">Aguardando horário</span></div>
+    <div class="card metric">Programadas<b id="robotScheduled">0</b><span class="muted">Confirmadas pelo canal</span></div>
+    <div class="card metric">Publicadas<b id="robotPublished">0</b><span class="muted">Concluídas</span></div>
+    <div class="card metric">Erros<b id="robotFailed">0</b><span class="muted">Máximo de 3 tentativas</span></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3 style="margin-top:0">Canais da próxima campanha</h3>
+    <div class="robotChannels">
+      <label class="robotChannel"><input type="checkbox" value="instagram" checked> 📸 Instagram</label>
+      <label class="robotChannel"><input type="checkbox" value="youtube" checked> ▶️ YouTube</label>
+      <label class="robotChannel"><input type="checkbox" value="facebook"> 📘 Facebook</label>
+      <label class="robotChannel"><input type="checkbox" value="pinterest"> 📌 Pinterest</label>
+      <label class="robotChannel"><input type="checkbox" value="blogger"> ✍️ Blogger</label>
+      <label class="robotChannel"><input type="checkbox" value="tiktok"> 🎬 TikTok</label>
+      <label class="robotChannel"><input type="checkbox" value="whatsapp"> 💬 WhatsApp</label>
+    </div>
+    <div class="note"><b>Modo seguro:</b> selecione apenas canais conectados. O robô pausa itens sem imagem/link e não reutiliza o mesmo produto no período de 30 dias.</div>
+    <div class="row">
+      <button class="btn green" id="btnRobotPlan" onclick="planCentralRobot()">✨ Criar fila automática</button>
+      <button class="btn secondary" onclick="loadCentralRobot()">↻ Atualizar fila</button>
+      <button class="btn secondary" onclick="retryCentralFailed()">Tentar erros novamente</button>
+    </div>
+    <div id="robotState" class="muted" style="margin-top:10px">Aguardando configuração do servidor.</div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3 style="margin-top:0">Fila de campanhas</h3>
+    <div class="robotTableWrap">
+      <table class="robotTable">
+        <thead><tr><th>Horário</th><th>Canal</th><th>Produto</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody id="robotQueue"><tr><td colspan="5" class="muted">Nenhuma campanha carregada.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
 <section id="publications" class="page hide">
   <h1>📤 Publicações</h1>
@@ -340,7 +380,7 @@ function showPage(id){
   if(id==='products') renderProducts();
   if(id==='ai') fillAI();
   if(id==='publications') fillPublications();
-  if(id==='shopeeImport') updateImportCount();
+  if(id==='shopeeImport') updateImportCount();\n  if(id==='robot') loadCentralRobot();
 }
 
 function escapeHtml(v='') {
@@ -594,6 +634,86 @@ function copyAIOutput(){
   }
 }
 
+
+const ROBOT_CHANNEL_LABELS={instagram:'Instagram',youtube:'YouTube',facebook:'Facebook',pinterest:'Pinterest',blogger:'Blogger',tiktok:'TikTok',whatsapp:'WhatsApp'};
+const ROBOT_STATUS_LABELS={pending:'Pendente',processing:'Processando',scheduled:'Programada',published:'Publicada',failed:'Erro',paused:'Pausada',cancelled:'Cancelada'};
+
+async function campaignQueueApi(body){
+  if(!session?.access_token) throw new Error('Entre como CEO para usar o Robô Central.');
+  const response=await fetch(SUPABASE_URL+'/functions/v1/campaign-queue',{
+    method:'POST',
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  let data={};
+  try{data=await response.json()}catch(_){}
+  if(!response.ok) throw new Error(data.error||'O Robô Central ainda não foi implantado no servidor.');
+  return data;
+}
+
+function renderCentralRobot(data){
+  const counts=data.counts||{};
+  $('robotPending').textContent=counts.pending||0;
+  $('robotScheduled').textContent=counts.scheduled||0;
+  $('robotPublished').textContent=counts.published||0;
+  $('robotFailed').textContent=counts.failed||0;
+  const queue=data.queue||[];
+  $('robotQueue').innerHTML=queue.length ? queue.map(job=>`<tr>
+    <td>${escapeHtml(new Date(job.scheduled_for).toLocaleString('pt-BR'))}</td>
+    <td>${escapeHtml(ROBOT_CHANNEL_LABELS[job.channel]||job.channel)}</td>
+    <td>${escapeHtml(job.product_name||'Produto')}</td>
+    <td><span class="pubStatus ${job.status==='published'||job.status==='scheduled'?'ok':job.status==='failed'?'err':'warn'}">${escapeHtml(ROBOT_STATUS_LABELS[job.status]||job.status)}</span></td>
+    <td>${['pending','failed'].includes(job.status)?`<button class="btn secondary small" onclick="pauseCentralJob(${Number(job.id)})">Pausar</button>`:''}</td>
+  </tr>`).join('') : '<tr><td colspan="5" class="muted">A fila ainda está vazia.</td></tr>';
+}
+
+async function loadCentralRobot(){
+  const state=$('robotState');
+  if(!isCEO()){
+    state.textContent='Entre como CEO para abrir a fila.';
+    return;
+  }
+  state.textContent='Carregando a fila central…';
+  try{
+    const data=await campaignQueueApi({action:'status'});
+    renderCentralRobot(data);
+    state.textContent='Robô Central conectado ✅';
+  }catch(err){
+    state.textContent=err.message;
+  }
+}
+
+async function planCentralRobot(){
+  const button=$('btnRobotPlan'), state=$('robotState');
+  const channels=[...document.querySelectorAll('.robotChannel input:checked')].map(x=>x.value);
+  if(!channels.length){state.textContent='Selecione pelo menos um canal.';return;}
+  button.disabled=true;
+  state.textContent='Selecionando produtos e montando a fila…';
+  try{
+    const data=await campaignQueueApi({action:'plan',channels});
+    state.textContent='Fila criada ✅ '+(data.planned?.length||0)+' campanha(s) planejada(s).';
+    await loadCentralRobot();
+  }catch(err){
+    state.textContent='Pausa segura: '+err.message;
+  }finally{button.disabled=false;}
+}
+
+async function retryCentralFailed(){
+  const state=$('robotState');
+  state.textContent='Preparando novas tentativas…';
+  try{
+    const data=await campaignQueueApi({action:'retry_failed'});
+    state.textContent=(data.retried||0)+' item(ns) retornaram para a fila.';
+    await loadCentralRobot();
+  }catch(err){state.textContent=err.message;}
+}
+
+async function pauseCentralJob(id){
+  try{
+    await campaignQueueApi({action:'pause',id});
+    await loadCentralRobot();
+  }catch(err){$('robotState').textContent=err.message;}
+}
 
 const PUB_LABELS = {
   blogger: 'Blogger',
