@@ -680,6 +680,11 @@ function generateCampaign(){
           <b>Criação automática:</b> o VIRALINK transforma a imagem deste produto em um vídeo vertical de 15 segundos e envia ao YouTube.
         </div>
         <button class="btn green small" onclick="generateAndUploadYoutubeShort()">✨ Gerar e publicar Short</button>
+        <div class="note" style="margin-top:12px">
+          <b>Agenda segura:</b> prepare até 4 Shorts diferentes. O YouTube publicará automaticamente nos próximos horários: 09h, 12h, 16h e 20h.
+        </div>
+        <button class="btn green small" id="btnYoutubeDailyBatch" onclick="scheduleYoutubeDailyBatch()">🗓️ Preparar 4 Shorts do dia</button>
+        <div id="youtubeBatchState" class="muted" style="margin-top:9px"></div>
         <details style="margin-top:12px">
           <summary class="muted" style="cursor:pointer">Ou enviar um vídeo pronto</summary>
           <div class="field" style="margin-top:10px">
@@ -785,7 +790,10 @@ async function createProductShortBlob(p, state, platform='youtube'){
   const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
   const dest=audioCtx.createMediaStreamDestination();
   const master=audioCtx.createGain(); master.gain.value=0.035; master.connect(dest);
-  const melody=[261.63,329.63,392,523.25,392,329.63,293.66,349.23,440,587.33,440,349.23,261.63,329.63,392];
+  const melodyBase=[261.63,329.63,392,523.25,392,329.63,293.66,349.23,440,587.33,440,349.23,261.63,329.63,392];
+  const productSeed=String(p.id||p.name||'viralink').split('').reduce((sum,ch)=>sum+ch.charCodeAt(0),0);
+  const transpose=[0.89,0.94,1,1.06,1.12][productSeed%5];
+  const melody=melodyBase.map(freq=>freq*transpose);
   melody.forEach((freq,i)=>{
     const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain();
     const start=audioCtx.currentTime+i, end=start+0.92;
@@ -884,7 +892,7 @@ async function generateTikTokVideo(){
   }
 }
 
-async function uploadYoutubeBlob(file,p,state){
+async function uploadYoutubeBlob(file,p,state,publishAt=null){
   const token=localStorage.getItem('youtube_access_token');
   if(!token) throw new Error('Conecte o YouTube primeiro em Integrações.');
   const metadata={
@@ -894,7 +902,7 @@ async function uploadYoutubeBlob(file,p,state){
       tags:['Shorts','oferta','achadinhos'],
       categoryId:'22'
     },
-    status:{privacyStatus:'public',selfDeclaredMadeForKids:false}
+    status:publishAt ? {privacyStatus:'private',publishAt,selfDeclaredMadeForKids:false} : {privacyStatus:'public',selfDeclaredMadeForKids:false}
   };
   state.textContent='Preparando o envio ao YouTube…';
   const init=await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',{
@@ -935,6 +943,80 @@ async function generateAndUploadYoutubeShort(){
     console.error(err);
     state.textContent='Erro: '+err.message;
     if(String(err.message).includes('401'))localStorage.removeItem('youtube_access_token');
+  }
+}
+
+const YOUTUBE_DAILY_TIMES=[9,12,16,20];
+const YOUTUBE_SCHEDULED_KEY='viralink_youtube_scheduled_products_v1';
+
+function nextYoutubeScheduleSlots(count=4){
+  const now=new Date(), slots=[];
+  for(let day=0;day<8 && slots.length<count;day++){
+    for(const hour of YOUTUBE_DAILY_TIMES){
+      const slot=new Date(now);
+      slot.setDate(now.getDate()+day);
+      slot.setHours(hour,0,0,0);
+      if(slot.getTime()>now.getTime()+5*60*1000) slots.push(slot);
+      if(slots.length===count) break;
+    }
+  }
+  return slots;
+}
+
+function youtubeScheduledProductIds(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(YOUTUBE_SCHEDULED_KEY)||'[]');
+    return new Set(Array.isArray(saved)?saved.map(String):[]);
+  }catch(_){ return new Set(); }
+}
+
+function saveYoutubeScheduledProductIds(ids){
+  localStorage.setItem(YOUTUBE_SCHEDULED_KEY,JSON.stringify([...ids]));
+}
+
+async function scheduleYoutubeDailyBatch(){
+  const state=$('youtubeBatchState'), button=$('btnYoutubeDailyBatch');
+  if(!localStorage.getItem('youtube_access_token')){
+    state.textContent='Conecte o YouTube em Integrações antes de preparar a agenda.';
+    return;
+  }
+  const used=youtubeScheduledProductIds();
+  const candidates=products.filter(p=>p && p.image_url && !used.has(String(p.id)));
+  const batch=candidates.slice(0,4);
+  if(!batch.length){
+    state.textContent='Pausa segura: não há produto novo com imagem para agendar.';
+    return;
+  }
+  const slots=nextYoutubeScheduleSlots(batch.length);
+  button.disabled=true;
+  let completed=0;
+  try{
+    for(let i=0;i<batch.length;i++){
+      const p=batch[i], slot=slots[i];
+      state.textContent='Criando Short '+(i+1)+' de '+batch.length+': '+(p.name||'produto')+'…';
+      const videoBlob=await createProductShortBlob(p,state,'youtube');
+      state.textContent='Agendando '+(i+1)+' de '+batch.length+' para '+slot.toLocaleString('pt-BR')+'…';
+      const video=await uploadYoutubeBlob(videoBlob,p,state,slot.toISOString());
+      used.add(String(p.id));
+      saveYoutubeScheduledProductIds(used);
+      publicationHistory.unshift({
+        product:p.name,
+        channel:'YouTube Shorts',
+        status:'Agendado ✅ '+slot.toLocaleString('pt-BR'),
+        date:new Date().toLocaleString('pt-BR'),
+        videoId:video.id||''
+      });
+      renderPublicationHistory();
+      completed++;
+    }
+    const remaining=4-completed;
+    state.textContent='Agenda pronta ✅ '+completed+' Short(s) programado(s).'+(remaining>0?' Pausa segura: faltaram '+remaining+' produtos novos com imagem.':'');
+  }catch(err){
+    console.error(err);
+    state.textContent='Agenda pausada após '+completed+' vídeo(s): '+err.message;
+    if(String(err.message).includes('401')) localStorage.removeItem('youtube_access_token');
+  }finally{
+    button.disabled=false;
   }
 }
 
