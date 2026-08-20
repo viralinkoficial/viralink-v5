@@ -238,7 +238,7 @@ body.ceoMode .productAdminBtns{display:flex}
     </div>
 
     <div class="note">
-      <b>Publicação:</b> o Instagram publica diretamente pela integração segura. Facebook, TikTok, WhatsApp e Pinterest continuam no modo assistido.
+      <b>Publicação:</b> Instagram publica diretamente; Facebook programa até 5 posts pela integração segura. TikTok, WhatsApp e Pinterest continuam no modo assistido.
     </div>
   </div>
 
@@ -264,7 +264,7 @@ body.ceoMode .productAdminBtns{display:flex}
   <button class="btn secondary" id="btnConnectBlogger">🔗 Conectar Blogger</button>
 </div>
     <div class="card"><h3>📸 Instagram</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
-    <div class="card"><h3>📘 Facebook</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
+    <div class="card"><h3>📘 Facebook</h3><p id="facebookStatus" class="pubStatus warn">Configuração pendente</p><button class="btn small secondary" onclick="checkFacebookConnection()">🔗 Verificar Página</button></div>
     <div class="card"><h3>🎬 TikTok</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
     <div class="card"><h3>▶️ YouTube Shorts</h3><p id="youtubeStatus" class="pubStatus warn">Não conectado</p><button class="btn small secondary" id="btnConnectYoutube">🔗 Conectar YouTube</button></div>
     <div class="card"><h3>💬 WhatsApp</h3><p class="pubStatus ok">Compartilhamento ativo</p><button class="btn small" onclick="showPage('publications')">Criar mensagem</button></div>
@@ -672,7 +672,7 @@ function generateCampaign(){
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
         <h3 style="margin:0">${PUB_LABELS[ch]}</h3>
-        <span class="pubStatus ${ch === 'blogger' || ch === 'youtube' || ch === 'tiktok' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : ch === 'instagram' ? 'Publicação automática' : ch === 'youtube' ? 'Publicação automática' : ch === 'tiktok' ? 'Vídeo automático' : ch === 'pinterest' ? 'Imagem automática' : 'Modo assistido'}</span>
+        <span class="pubStatus ${ch === 'blogger' || ch === 'youtube' || ch === 'tiktok' || ch === 'facebook' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : ch === 'instagram' ? 'Publicação automática' : ch === 'youtube' ? 'Publicação automática' : ch === 'facebook' ? 'Agendamento automático' : ch === 'tiktok' ? 'Vídeo automático' : ch === 'pinterest' ? 'Imagem automática' : 'Modo assistido'}</span>
       </div>
       <div class="aiout pubPreview" style="margin-top:12px">${escapeHtml(publicationContent(p,ch))}</div>
       ${ch === 'youtube' ? `
@@ -709,7 +709,15 @@ function generateCampaign(){
           <button class="btn green small" onclick="generateAndPublishInstagramReel()">🎬 Gerar e publicar Reel</button>
           <button class="btn secondary small" onclick="openPublicationImage()">🖼️ Abrir imagem</button>
         </div>
-        <div id="instagramReelState" class="muted" style="margin-top:9px"></div>` : `
+        <div id="instagramReelState" class="muted" style="margin-top:9px"></div>` : ch === 'facebook' ? `
+        <div class="note" style="margin-top:12px">
+          <b>Agenda segura:</b> programa até 5 produtos diferentes nos próximos horários de 09h, 12h, 15h, 18h e 21h.
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn green small" id="btnFacebookDailyBatch" onclick="scheduleFacebookDailyBatch()">🗓️ Preparar 5 posts do dia</button>
+          <button class="btn secondary small" onclick="checkFacebookConnection()">🔗 Verificar Página</button>
+        </div>
+        <div id="facebookBatchState" class="muted" style="margin-top:9px"></div>` : `
         <div class="row" style="margin-top:12px">
           <button class="btn green small" onclick="assistPublish('${ch}')">${ch==='pinterest'?'📌 Criar imagem e abrir':'📋 Copiar e abrir'} ${PUB_LABELS[ch]}</button>
           <button class="btn secondary small" onclick="openPublicationImage()">🖼️ Abrir imagem</button>
@@ -731,6 +739,113 @@ function openPublicationImage(){
   const p = products.find(x => String(x.id) === $('pubProduct').value);
   if(!p || !p.image_url) return alert('Este produto ainda não possui imagem cadastrada.');
   window.open(p.image_url, '_blank', 'noopener');
+}
+
+const FACEBOOK_DAILY_TIMES=[9,12,15,18,21];
+const FACEBOOK_SCHEDULED_KEY='viralink_facebook_scheduled_products_v1';
+
+function nextFacebookScheduleSlots(count=5){
+  const now=new Date(), slots=[];
+  for(let day=0;day<8 && slots.length<count;day++){
+    for(const hour of FACEBOOK_DAILY_TIMES){
+      const slot=new Date(now);
+      slot.setDate(now.getDate()+day);
+      slot.setHours(hour,0,0,0);
+      if(slot.getTime()>now.getTime()+12*60*1000) slots.push(slot);
+      if(slots.length===count) break;
+    }
+  }
+  return slots;
+}
+
+function facebookScheduledProductIds(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(FACEBOOK_SCHEDULED_KEY)||'[]');
+    return new Set(Array.isArray(saved)?saved.map(String):[]);
+  }catch(_){ return new Set(); }
+}
+
+function saveFacebookScheduledProductIds(ids){
+  localStorage.setItem(FACEBOOK_SCHEDULED_KEY,JSON.stringify([...ids]));
+}
+
+async function facebookApi(body){
+  if(!session?.access_token) throw new Error('Entre como CEO para usar o Facebook.');
+  const response=await fetch(SUPABASE_URL+'/functions/v1/facebook-schedule',{
+    method:'POST',
+    headers:{
+      'apikey':SUPABASE_KEY,
+      'Authorization':'Bearer '+session.access_token,
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify(body)
+  });
+  let data={};
+  try{data=await response.json()}catch(_){}
+  if(!response.ok) throw new Error(data.error||'A função do Facebook ainda não foi configurada no servidor.');
+  return data;
+}
+
+async function checkFacebookConnection(){
+  const integrationState=$('facebookStatus'), batchState=$('facebookBatchState');
+  const target=batchState||integrationState;
+  if(target) target.textContent='Verificando a Página do Facebook…';
+  try{
+    const data=await facebookApi({action:'status'});
+    if(integrationState){
+      integrationState.textContent='Conectado: '+(data.page?.name||'Página do Facebook');
+      integrationState.className='pubStatus ok';
+    }
+    if(batchState) batchState.textContent='Página conectada ✅ '+(data.page?.name||'');
+  }catch(err){
+    if(integrationState){
+      integrationState.textContent='Configuração pendente';
+      integrationState.className='pubStatus warn';
+    }
+    if(target) target.textContent=err.message;
+  }
+}
+
+async function scheduleFacebookDailyBatch(){
+  const state=$('facebookBatchState'), button=$('btnFacebookDailyBatch');
+  if(!isCEO()){ state.textContent='Entre como CEO antes de programar o Facebook.'; return; }
+  const used=facebookScheduledProductIds();
+  const batch=products.filter(p=>p&&String(p.image_url||'').startsWith('https://')&&!used.has(String(p.id))).slice(0,5);
+  if(!batch.length){ state.textContent='Pausa segura: não há produto novo com imagem pública.'; return; }
+  const slots=nextFacebookScheduleSlots(batch.length);
+  const posts=batch.map((p,i)=>({
+    product_id:String(p.id),
+    image_url:p.image_url,
+    message:publicationContent(p,'facebook')+'\n\n#Achadinhos #Oferta #VIRALINK',
+    publish_at:slots[i].toISOString()
+  }));
+  button.disabled=true;
+  state.textContent='Enviando '+posts.length+' publicações para a agenda do Facebook…';
+  try{
+    const data=await facebookApi({posts});
+    const byProduct=new Map(batch.map(p=>[String(p.id),p]));
+    let completed=0;
+    for(const result of data.results||[]){
+      if(!result.success) continue;
+      const id=String(result.product_id), p=byProduct.get(id);
+      used.add(id); completed++;
+      publicationHistory.unshift({
+        product:p?.name||'Produto',
+        channel:'Facebook',
+        status:'Agendado ✅ '+new Date(result.publish_at).toLocaleString('pt-BR'),
+        date:new Date().toLocaleString('pt-BR')
+      });
+    }
+    saveFacebookScheduledProductIds(used);
+    renderPublicationHistory();
+    const failed=(data.results||[]).filter(x=>!x.success);
+    state.textContent='Agenda pronta ✅ '+completed+' post(s) programado(s).'+(failed.length?' '+failed.length+' não foram programados; confira a configuração.':'');
+  }catch(err){
+    console.error(err);
+    state.textContent='Agenda pausada: '+err.message;
+  }finally{
+    button.disabled=false;
+  }
 }
 
 async function assistPublish(channel){
