@@ -982,13 +982,25 @@ async function uploadAndPublishInstagramReel(videoBlob,p,state){
   }
 }
 
+function preserveInstagramReel(videoBlob,p,state){
+  const url=URL.createObjectURL(videoBlob);
+  const safeName=String(p.name||'produto').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'produto';
+  const filename='viralink-reel-'+safeName+'.mp4';
+  copyPublicationText(publicationContent(p,'instagram')).catch(()=>{});
+  state.innerHTML='<span class="statuserr">A publicação automática falhou, mas o Reel foi preservado.</span><div class="row" style="margin-top:9px"><a class="btn green small" download="'+filename+'" href="'+url+'">⬇️ Baixar Reel pronto</a><a class="btn secondary small" target="_blank" rel="noopener" href="https://www.instagram.com/">📱 Abrir Instagram</a></div><small class="muted">A legenda foi copiada. Baixe o vídeo e selecione-o no Instagram.</small>';
+  setTimeout(()=>URL.revokeObjectURL(url),300000);
+  publicationHistory.unshift({product:p.name,channel:'Instagram Reels',status:'Reel pronto para confirmar',date:new Date().toLocaleString('pt-BR')});
+  renderPublicationHistory();
+}
+
 async function generateAndPublishInstagramReel(){
   const p=products.find(x=>String(x.id)===$('pubProduct').value);
   const state=$('instagramReelState');
   if(!p) return alert('Selecione um produto.');
+  let videoBlob=null;
   try{
     state.textContent='Preparando o Reel…';
-    const videoBlob=await createProductShortBlob(p,state,'instagram');
+    videoBlob=await createProductShortBlob(p,state,'instagram');
     await uploadAndPublishInstagramReel(videoBlob,p,state);
     publicationHistory.unshift({product:p.name,channel:'Instagram Reels',status:'Publicado ✅',date:new Date().toLocaleString('pt-BR')});
     renderPublicationHistory();
@@ -996,8 +1008,13 @@ async function generateAndPublishInstagramReel(){
     alert('🎬 Reel publicado no Instagram com sucesso!');
   }catch(err){
     console.error(err);
-    state.textContent='Erro: '+err.message;
-    alert('Erro ao publicar o Reel: '+err.message);
+    if(videoBlob){
+      preserveInstagramReel(videoBlob,p,state);
+      alert('A publicação direta falhou, mas o Reel está pronto. Toque em “Baixar Reel pronto” e depois em “Abrir Instagram”.');
+    }else{
+      state.textContent='Erro ao gerar o Reel: '+err.message;
+      alert('Erro ao gerar o Reel: '+err.message);
+    }
   }
 }
 
