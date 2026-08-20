@@ -686,10 +686,15 @@ function generateCampaign(){
         <button class="btn green" onclick="generateTikTokVideo()">🎵 Criar vídeo e abrir TikTok</button>
         <div id="tiktokVideoState" class="muted" style="margin-top:9px"></div>
       ` : ch === 'blogger' ? '' : ch === 'instagram' ? `
+        <div class="note" style="margin-top:12px">
+          <b>Reel automático:</b> cria um vídeo vertical de 15 segundos com música instrumental original, textos do produto e hashtags.
+        </div>
         <div class="row" style="margin-top:12px">
-          <button class="btn green small" onclick="publishInstagramSelected()">📸 Publicar agora no Instagram</button>
+          <button class="btn green small" onclick="publishInstagramSelected()">📸 Publicar foto</button>
+          <button class="btn green small" onclick="generateAndPublishInstagramReel()">🎬 Gerar e publicar Reel</button>
           <button class="btn secondary small" onclick="openPublicationImage()">🖼️ Abrir imagem</button>
-        </div>` : `
+        </div>
+        <div id="instagramReelState" class="muted" style="margin-top:9px"></div>` : `
         <div class="row" style="margin-top:12px">
           <button class="btn green small" onclick="assistPublish('${ch}')">${ch==='pinterest'?'📌 Criar imagem e abrir':'📋 Copiar e abrir'} ${PUB_LABELS[ch]}</button>
           <button class="btn secondary small" onclick="openPublicationImage()">🖼️ Abrir imagem</button>
@@ -781,7 +786,11 @@ async function createProductShortBlob(p, state, platform='youtube'){
     osc.connect(gain); gain.connect(master); osc.start(start); osc.stop(end);
   });
   const combined=new MediaStream([...videoStream.getVideoTracks(),...dest.stream.getAudioTracks()]);
-  const supported=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(MediaRecorder.isTypeSupported);
+  const candidates=platform==='instagram'
+    ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=avc1.42E01E','video/mp4']
+    : ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const supported=candidates.find(type=>MediaRecorder.isTypeSupported(type));
+  if(!supported && platform==='instagram') throw new Error('Este Chrome ainda não consegue gerar MP4 para o Instagram. Atualize o navegador e tente novamente.');
   if(!supported) throw new Error('Formato de vídeo não suportado neste navegador.');
   const recorder=new MediaRecorder(combined,{mimeType:supported,videoBitsPerSecond:2200000});
   const chunks=[];
@@ -824,8 +833,8 @@ async function createProductShortBlob(p, state, platform='youtube'){
         ctx.font='bold 31px Arial'; ctx.fillStyle='#fbbf24'; ctx.fillText('LINK NA DESCRIÇÃO',360,1045);
       }
       ctx.font='bold 24px Arial'; ctx.fillStyle='#cbd5e1';
-      ctx.fillText(platform==='tiktok' ? '#TikTok  #Achadinhos  #Oferta' : '#Shorts  #Achadinhos  #Oferta',360,1168);
-      state.textContent='Criando o Short… '+Math.min(99,Math.round(progress*100))+'%';
+      ctx.fillText(platform==='tiktok' ? '#TikTok  #Achadinhos  #Oferta' : platform==='instagram' ? '#Reels  #Achadinhos  #Oferta' : '#Shorts  #Achadinhos  #Oferta',360,1168);
+      state.textContent=(platform==='instagram'?'Criando o Reel… ':'Criando o Short… ')+Math.min(99,Math.round(progress*100))+'%';
       if(elapsed<duration) requestAnimationFrame(frame); else resolve();
     }
     requestAnimationFrame(frame);
@@ -929,6 +938,66 @@ async function uploadYoutubeShort(){
   }catch(err){
     console.error(err); state.textContent='Erro no envio: '+err.message;
     if(String(err.message).includes('401'))localStorage.removeItem('youtube_access_token');
+  }
+}
+
+async function uploadAndPublishInstagramReel(videoBlob,p,state){
+  if(!session) throw new Error('Entre como CEO para publicar o Reel.');
+  if(!videoBlob.type.startsWith('video/mp4')) throw new Error('O Instagram exige vídeo MP4. Atualize o Chrome e gere novamente.');
+
+  const safeName=String(p.name||'produto').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'produto';
+  const path='private/'+session.user.id+'/reel-'+Date.now()+'-'+safeName+'.mp4';
+  state.textContent='Enviando o Reel com segurança…';
+
+  const upload=await sb.storage.from('social-videos').upload(path,videoBlob,{
+    cacheControl:'3600',
+    contentType:'video/mp4',
+    upsert:false
+  });
+  if(upload.error) throw new Error('Erro ao enviar o vídeo: '+upload.error.message);
+
+  const publicData=sb.storage.from('social-videos').getPublicUrl(path);
+  const videoUrl=publicData?.data?.publicUrl;
+  if(!videoUrl) throw new Error('Não foi possível obter o endereço público do Reel.');
+
+  try{
+    state.textContent='Instagram processando o Reel…';
+    const response=await fetch(SUPABASE_URL+'/functions/v1/instagram-reel',{
+      method:'POST',
+      headers:{
+        'apikey':SUPABASE_KEY,
+        'Authorization':'Bearer '+session.access_token,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        video_url:videoUrl,
+        caption:publicationContent(p,'instagram')
+      })
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data.success) throw new Error(data.error||'Não foi possível publicar o Reel.');
+    return data;
+  }finally{
+    await sb.storage.from('social-videos').remove([path]).catch(()=>{});
+  }
+}
+
+async function generateAndPublishInstagramReel(){
+  const p=products.find(x=>String(x.id)===$('pubProduct').value);
+  const state=$('instagramReelState');
+  if(!p) return alert('Selecione um produto.');
+  try{
+    state.textContent='Preparando o Reel…';
+    const videoBlob=await createProductShortBlob(p,state,'instagram');
+    await uploadAndPublishInstagramReel(videoBlob,p,state);
+    publicationHistory.unshift({product:p.name,channel:'Instagram Reels',status:'Publicado ✅',date:new Date().toLocaleString('pt-BR')});
+    renderPublicationHistory();
+    state.textContent='Reel publicado com música original ✅';
+    alert('🎬 Reel publicado no Instagram com sucesso!');
+  }catch(err){
+    console.error(err);
+    state.textContent='Erro: '+err.message;
+    alert('Erro ao publicar o Reel: '+err.message);
   }
 }
 
