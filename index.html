@@ -135,6 +135,7 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
   <div class="card">
     <div class="field"><label>Arquivo CSV do Feed de Produto</label><input id="shopeeCsv" type="file" accept=".csv,text/csv" disabled></div>
     <div class="importGrid">
+      <div class="field"><label>Nicho pronto</label><select id="importNiche" onchange="applyImportNiche()"><option value="">Todos os nichos</option><option value="casa">🏠 Casa e decoração</option><option value="beleza">💄 Beleza e cuidados</option><option value="eletronicos">📱 Eletrônicos</option><option value="moda">👗 Moda e acessórios</option><option value="bebe">🍼 Bebê e família</option><option value="papelaria">📚 Papelaria e estudos</option></select></div>
       <div class="field"><label>Buscar palavra ou categoria</label><input id="importKeyword" placeholder="Ex.: smartwatch, beleza, casa"></div>
       <div class="field"><label>Desconto mínimo</label><select id="importDiscount"><option value="0">Qualquer desconto</option><option value="10">10% ou mais</option><option value="20" selected>20% ou mais</option><option value="30">30% ou mais</option><option value="40">40% ou mais</option></select></div>
       <div class="field"><label>Avaliação mínima</label><select id="importRating"><option value="0">Qualquer avaliação</option><option value="4">4,0 ou mais</option><option value="4.5" selected>4,5 ou mais</option><option value="4.8">4,8 ou mais</option></select></div>
@@ -190,6 +191,7 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
         <button type="button" class="btn secondary aiPlatformBtn" data-platform="instagram" onclick="setAIPlatform('instagram')">📸 Instagram</button>
         <button type="button" class="btn secondary aiPlatformBtn" data-platform="blogger" onclick="setAIPlatform('blogger')">✍️ Blogger</button>
         <button type="button" class="btn secondary aiPlatformBtn" data-platform="tiktok" onclick="setAIPlatform('tiktok')">🎬 TikTok/Shorts</button>
+        <button type="button" class="btn secondary aiPlatformBtn" data-platform="pinterest" onclick="setAIPlatform('pinterest')">📌 Pinterest</button>
       </div>
     </div>
     <div class="row" style="margin-top:14px;align-items:center">
@@ -222,6 +224,7 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
         <label class="pubChannel"><input type="checkbox" value="tiktok"> 🎬 TikTok</label>
         <label class="pubChannel"><input type="checkbox" value="youtube"> ▶️ YouTube Shorts</label>
         <label class="pubChannel"><input type="checkbox" value="whatsapp"> 💬 WhatsApp</label>
+        <label class="pubChannel"><input type="checkbox" value="pinterest"> 📌 Pinterest</label>
       </div>
     </div>
 
@@ -232,7 +235,7 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
     </div>
 
     <div class="note">
-      <b>Modo assistido:</b> Instagram, Facebook, TikTok e WhatsApp já podem receber o conteúdo preparado.
+      <b>Modo assistido:</b> Instagram, Facebook, TikTok, WhatsApp e Pinterest já podem receber o conteúdo preparado.
       O VIRALINK copia a legenda, abre o canal escolhido e deixa apenas a confirmação final para você.
     </div>
   </div>
@@ -440,7 +443,7 @@ function fillAI(){
 }
 
 let aiPlatform = 'whatsapp';
-const AI_PLATFORM_LABELS = { whatsapp: 'WhatsApp', instagram: 'Instagram', blogger: 'Blogger', tiktok: 'TikTok/Shorts' };
+const AI_PLATFORM_LABELS = { whatsapp: 'WhatsApp', instagram: 'Instagram', blogger: 'Blogger', tiktok: 'TikTok/Shorts', pinterest:'Pinterest' };
 
 function setAIPlatform(platform){
   aiPlatform = platform;
@@ -503,6 +506,9 @@ Mostre o produto em uso e destaque o diferencial principal e o preço na tela.
 
 CTA (últimos segundos):
 "Link na bio/comentários para garantir o seu na ${platformName}. Corre antes que acabe!"`;
+  }
+  if(platform === 'pinterest'){
+    return `✨ ${name}\n\n${desc}\n\n💰 ${price}\n\nVeja todos os detalhes e avaliações antes que a oferta termine:\n${link}\n\n#Achadinhos #Shopee #Oferta ${aiHashtags(p)}`;
   }
   // whatsapp (default)
   return `🔥 *${name}*
@@ -587,6 +593,7 @@ const PUB_LABELS = {
   tiktok: 'TikTok',
   youtube: 'YouTube Shorts',
   whatsapp: 'WhatsApp'
+  ,pinterest: 'Pinterest'
 };
 
 let publicationHistory = [];
@@ -600,6 +607,7 @@ function fillPublications(){
 }
 
 function publicationContent(p, channel){
+  if(channel === 'pinterest') return buildAIContent(p,'pinterest');
   if(channel === 'tiktok'){
     return `🔥 ${p.name || 'Achadinho do dia'}
 
@@ -655,7 +663,7 @@ function generateCampaign(){
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
         <h3 style="margin:0">${PUB_LABELS[ch]}</h3>
-        <span class="pubStatus ${ch === 'blogger' || ch === 'youtube' || ch === 'tiktok' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : ch === 'youtube' ? 'Publicação automática' : ch === 'tiktok' ? 'Vídeo automático' : 'Modo assistido'}</span>
+        <span class="pubStatus ${ch === 'blogger' || ch === 'youtube' || ch === 'tiktok' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : ch === 'youtube' ? 'Publicação automática' : ch === 'tiktok' ? 'Vídeo automático' : ch === 'pinterest' ? 'Imagem automática' : 'Modo assistido'}</span>
       </div>
       <div class="aiout pubPreview" style="margin-top:12px">${escapeHtml(publicationContent(p,ch))}</div>
       ${ch === 'youtube' ? `
@@ -680,7 +688,7 @@ function generateCampaign(){
         <div id="tiktokVideoState" class="muted" style="margin-top:9px"></div>
       ` : ch === 'blogger' ? '' : `
         <div class="row" style="margin-top:12px">
-          <button class="btn green small" onclick="assistPublish('${ch}')">📋 Copiar e abrir ${PUB_LABELS[ch]}</button>
+          <button class="btn green small" onclick="assistPublish('${ch}')">${ch==='pinterest'?'📌 Criar imagem e abrir':'📋 Copiar e abrir'} ${PUB_LABELS[ch]}</button>
           <button class="btn secondary small" onclick="openPublicationImage()">🖼️ Abrir imagem</button>
         </div>`}
     </div>
@@ -706,18 +714,29 @@ async function assistPublish(channel){
   const p = products.find(x => String(x.id) === $('pubProduct').value);
   if(!p) return alert('Selecione um produto.');
   const text = publicationContent(p, channel);
-  try { await copyPublicationText(text); }
+  try { await copyPublicationText(text); if(channel==='pinterest') await downloadPinterestPinImage(p); }
   catch(e) { return alert('Não foi possível copiar automaticamente. Selecione o texto da prévia e copie manualmente.'); }
   const urls = {
     instagram: 'https://www.instagram.com/',
     facebook: 'https://www.facebook.com/',
     tiktok: 'https://www.tiktok.com/upload',
-    whatsapp: 'https://wa.me/?text=' + encodeURIComponent(text)
+    whatsapp: 'https://wa.me/?text=' + encodeURIComponent(text),
+    pinterest: 'https://www.pinterest.com/pin-builder/'
   };
   publicationHistory.unshift({product:p.name,channel:PUB_LABELS[channel]||channel,status:'Legenda copiada ✅',date:new Date().toLocaleString('pt-BR')});
   renderPublicationHistory();
   alert('Legenda copiada! O canal será aberto agora. Escolha a imagem ou vídeo e confirme a publicação.');
   window.open(urls[channel], '_blank', 'noopener');
+}
+
+async function downloadPinterestPinImage(p){
+  if(!p.image_url) throw new Error('Produto sem imagem.');
+  const response=await fetch(p.image_url,{mode:'cors'});if(!response.ok)throw new Error('Não foi possível carregar a imagem.');
+  const img=await createImageBitmap(await response.blob()),canvas=document.createElement('canvas');canvas.width=1000;canvas.height=1500;const ctx=canvas.getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,1000,1500);grad.addColorStop(0,'#07111f');grad.addColorStop(1,'#5b21b6');ctx.fillStyle=grad;ctx.fillRect(0,0,1000,1500);
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(70,120,860,850,34);ctx.fill();const ratio=Math.min(790/img.width,780/img.height);const w=img.width*ratio,h=img.height*ratio;ctx.drawImage(img,(1000-w)/2,155+(780-h)/2,w,h);
+  ctx.textAlign='center';ctx.fillStyle='#c084fc';ctx.font='bold 42px Arial';ctx.fillText('VIRALINK • ACHADINHO',500,55);ctx.fillStyle='#fff';ctx.font='bold 48px Arial';drawWrappedText(ctx,p.name||'Oferta especial',500,1030,860,58,4);ctx.fillStyle='#fbbf24';ctx.font='bold 58px Arial';ctx.fillText(aiPriceText(p),500,1290);ctx.fillStyle='#fff';ctx.font='bold 34px Arial';ctx.fillText('VEJA A OFERTA • LINK NO PIN',500,1390);
+  img.close();const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png',.94));const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pin-viralink-'+String(p.name||'produto').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
 
 function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines){
@@ -1101,7 +1120,18 @@ async function removeProduct(id){
 }
 
 const IMPORT_BLOCKED = /\b(cigarro|tabaco|vape|narguile|cerveja|vinho|vodka|whisky|cacha[cç]a|bebida alco[oó]lica|cassino|aposta|arma de fogo|muni[cç][aã]o|conte[uú]do adulto)\b/i;
+const IMPORT_NICHES={
+  casa:['casa','cozinha','decoracao','organizacao','moveis','iluminacao','home'],
+  beleza:['beleza','skincare','cabelo','maquiagem','perfume','cuidados pessoais','beauty'],
+  eletronicos:['eletronico','smartwatch','fone','bluetooth','celular','informatica','audio','gadget'],
+  moda:['moda','roupa','calcado','bolsa','acessorio','fashion','women clothes','men clothes'],
+  bebe:['bebe','infantil','maternidade','crianca','baby','mom & baby'],
+  papelaria:['papelaria','caderno','caneta','escolar','escritorio','stationery','notebooks & papers']
+};
 function normalizeSearch(v=''){return String(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function applyImportNiche(){
+  const niche=$('importNiche').value,terms=IMPORT_NICHES[niche]||[];$('importKeyword').value=terms.length?terms.slice(0,3).join(', '):'';
+}
 function shopeeScore(row){return (Number(row.item_rating)||0)*12+(Number(row.shop_rating)||0)*5+Math.min(Number(row.discount_percentage)||0,70)*.55+Math.log10((Number(row.like)||0)+1)*2}
 
 function analyzeShopeeCsv(){
@@ -1109,7 +1139,7 @@ function analyzeShopeeCsv(){
   const file=$('shopeeCsv').files[0];
   if(!file)return alert('Selecione o arquivo CSV baixado da Shopee.');
   if(typeof Papa==='undefined')return alert('O leitor de CSV não carregou. Verifique sua internet e atualize a página.');
-  const keyword=normalizeSearch($('importKeyword').value.trim()),minDiscount=Number($('importDiscount').value)||0,minRating=Number($('importRating').value)||0,limit=Number($('importLimit').value)||50,keep=Math.max(limit*5,250),seen=new Set();
+  const keyword=normalizeSearch($('importKeyword').value.trim()),customTerms=keyword.split(',').map(x=>x.trim()).filter(Boolean),nicheTerms=IMPORT_NICHES[$('importNiche').value]||[],searchTerms=nicheTerms.length?nicheTerms:customTerms,minDiscount=Number($('importDiscount').value)||0,minRating=Number($('importRating').value)||0,limit=Number($('importLimit').value)||50,keep=Math.max(limit*5,250),seen=new Set();
   let scanned=0,accepted=0; shopeeCandidates=[];
   $('btnAnalyzeCsv').disabled=true;$('btnImportSelected').disabled=true;$('importPreview').innerHTML='<tr><td colspan="6" class="muted">Analisando o catálogo...</td></tr>';$('importStatus').textContent='Lendo o Feed da Shopee. Pode levar alguns minutos; mantenha esta aba aberta.';$('importProgress').style.width='1%';
   Papa.parse(file,{header:true,skipEmptyLines:true,worker:true,
@@ -1117,7 +1147,7 @@ function analyzeShopeeCsv(){
       const row=results.data||{};scanned++;
       if(scanned%5000===0){const pct=results.meta&&results.meta.cursor?Math.min(99,Math.round(results.meta.cursor/file.size*100)):Math.min(95,Math.round(scanned/2800000*100));$('importProgress').style.width=pct+'%';$('importStatus').textContent=`${scanned.toLocaleString('pt-BR')} produtos analisados · ${accepted.toLocaleString('pt-BR')} atendem aos filtros`}
       const id=String(row.itemid||'').trim(),title=String(row.title||'').trim(),category=[row.global_category1,row.global_category2,row.global_category3].filter(Boolean).join(' › '),searchText=normalizeSearch(title+' '+category+' '+(row.description||''));
-      if(!id||!title||seen.has(id)||IMPORT_BLOCKED.test(searchText)||keyword&&!searchText.includes(keyword)||(Number(row.discount_percentage)||0)<minDiscount||(Number(row.item_rating)||0)<minRating||!row.image_link||!(row['product_short link']||row.product_link))return;
+      if(!id||!title||seen.has(id)||IMPORT_BLOCKED.test(searchText)||searchTerms.length&&!searchTerms.some(term=>searchText.includes(term))||(Number(row.discount_percentage)||0)<minDiscount||(Number(row.item_rating)||0)<minRating||!row.image_link||!(row['product_short link']||row.product_link))return;
       seen.add(id);accepted++;shopeeCandidates.push({itemid:id,name:title.slice(0,240),description:String(row.description||'').replace(/\s+/g,' ').trim().slice(0,900),price:Number(row.sale_price||row.price)||null,platform:'Shopee',category:category||'Ofertas Shopee',image_url:String(row.image_link||''),affiliate_url:String(row['product_short link']||row.product_link||''),rating:Number(row.item_rating)||0,discount:Number(row.discount_percentage)||0,score:shopeeScore(row),selected:true});
       if(shopeeCandidates.length>keep*2)shopeeCandidates.sort((a,b)=>b.score-a.score).splice(keep);
     },
