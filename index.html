@@ -57,6 +57,8 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
 .productAdminBtns{display:flex;gap:8px;margin-top:10px}
 .aiPlatformBtn.active{background:linear-gradient(90deg,#6d28d9,#9333ea);border-color:transparent}
 .copyState{color:#4ade80;font-size:13px;margin-left:10px}
+.offerLink{display:block;margin:9px 0;color:#c4b5fd;font-size:12px;overflow-wrap:anywhere}
+.buyBtn{display:block;width:100%;text-align:center;text-decoration:none}
 .modalOverlay{position:fixed;inset:0;background:rgba(4,8,16,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
 .modalOverlay.hide{display:none!important}
 .modalBox{max-width:460px;width:100%;max-height:90vh;overflow:auto}
@@ -89,7 +91,7 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
     <button data-page="ai">✨ IA Creator</button>
     <button data-page="publications">📤 Publicações</button>
     <button data-page="integrations">🔌 Integrações</button>
-    <button data-page="login" id="navLogin">🔐 Login CEO</button>
+    <button data-page="login" id="navLogin">👤 Entrar / Conta</button>
   </div>
   <div class="plan"><b>VIRALINK V5</b><p style="font-size:13px">Supabase conectado</p><small>Produtos na nuvem ☁️</small></div>
 </aside>
@@ -270,17 +272,19 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
 </section>
 
 <section id="login" class="page hide">
-  <h1>Login do CEO</h1>
-  <div class="sub">Acesso restrito às funções administrativas da VIRALINK.</div>
+  <h1>Minha conta</h1>
+  <div class="sub">Comprar não exige cadastro. A conta de usuária é opcional; somente o CEO administra produtos e publicações.</div>
   <div class="card" style="max-width:420px" id="loginCard">
     <div id="loginFormWrap">
-      <div class="field"><label>E-mail</label><input id="loginEmail" type="email" placeholder="ceo@viralink.com" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="field"><label>E-mail</label><input id="loginEmail" type="email" placeholder="seuemail@exemplo.com" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div class="field"><label>Senha</label><input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="btn" style="width:100%" onclick="doLogin()">Entrar</button>
+      <button class="btn secondary" style="width:100%;margin-top:9px" onclick="createUserAccount()">Criar conta de usuária</button>
+      <div class="muted" style="font-size:12px;margin-top:10px">Você também pode continuar como visitante e comprar normalmente.</div>
       <div id="loginError" class="errbox hide"></div>
     </div>
     <div id="loggedInWrap" class="hide">
-      <p>Sessão ativa como <b id="loggedEmail"></b></p>
+      <p>Sessão ativa como <b id="loggedRole"></b><br><span id="loggedEmail" class="muted"></span></p>
       <button class="btn secondary" onclick="doLogout()">Sair</button>
     </div>
   </div>
@@ -315,6 +319,7 @@ h1{font-size:30px;margin:28px 0 5px} .sub,.muted{color:var(--muted)}
 const SUPABASE_URL = 'https://pfbzdktlfdotsgfarhel.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nXkBQxBy18WoOH21matfzg_CQdDCvLi';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const CEO_EMAIL = 'vivianeferreiracaroline@gmail.com';
 let products = [];
 let adminProducts = [];
 let session = null;
@@ -322,6 +327,7 @@ let editingProductId = null;
 let shopeeCandidates = [];
 
 const $ = id => document.getElementById(id);
+const isCEO = () => !!session && String(session.user?.email||'').toLowerCase() === CEO_EMAIL;
 
 document.querySelectorAll('.nav button').forEach(b => b.onclick = () => showPage(b.dataset.page));
 
@@ -394,13 +400,13 @@ function card(p, store=false){
       <div class="muted">${escapeHtml(p.category || 'Oferta')}</div>
       <div class="desc">${escapeHtml(p.description || '')}</div>
       <div class="price">R$ ${price}</div>
-      ${store ? `<button class="btn green" onclick="openOffer('${safeLink}')">Ver oferta →</button>` : `<span class="cloud">☁️ Supabase</span>`}
+      ${store ? `<a class="offerLink" href="${safeLink}" target="_blank" rel="noopener sponsored">🔗 ${safeLink}</a><a class="btn green buyBtn" href="${safeLink}" target="_blank" rel="noopener sponsored">🛍️ Comprar agora</a><small class="muted">Link de afiliada: você não paga nada a mais.</small>` : `<span class="cloud">☁️ Supabase</span>`}
     </div>
   </div>`;
 }
 
 function renderProducts(){
-  if(session){
+  if(isCEO()){
     $('productList').innerHTML = adminProducts.length ? adminProducts.map(p=>adminCard(p)).join('') : '<div class="card empty">Nenhum produto cadastrado ainda.</div>';
   } else {
     $('productList').innerHTML = products.length ? products.map(p=>card(p,false)).join('') : '<div class="card empty">Nenhum produto ativo encontrado no Supabase.</div>';
@@ -427,7 +433,7 @@ function adminCard(p){
 }
 function refreshProducts(){
   loadProducts();
-  if(session) loadAdminProducts();
+  if(isCEO()) loadAdminProducts();
 }
 function renderStore(){
   $('storeList').innerHTML = products.length ? products.map(p=>card(p,true)).join('') : '<div class="card empty">A vitrine ainda não possui produtos ativos.</div>';
@@ -479,7 +485,10 @@ ${desc}
 💰 ${price}
 🛍️ Disponível via ${platformName}
 
-👉 Corre no link da bio/stories antes que acabe!
+👉 Acesse o produto:
+${link}
+
+🔗 O link também está disponível na vitrine do VIRALINK e na bio.
 
 ${aiHashtags(p)}`;
   }
@@ -942,7 +951,7 @@ async function uploadYoutubeShort(){
 }
 
 async function uploadAndPublishInstagramReel(videoBlob,p,state){
-  if(!session) throw new Error('Entre como CEO para publicar o Reel.');
+  if(!isCEO()) throw new Error('Entre como CEO para publicar o Reel.');
   if(!videoBlob.type.startsWith('video/mp4')) throw new Error('O Instagram exige vídeo MP4. Atualize o Chrome e gere novamente.');
 
   const safeName=String(p.name||'produto').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'produto';
@@ -1023,7 +1032,7 @@ function instagramImageUrl(url=''){
 }
 
 async function publishInstagramProduct(p){
-  if(!session) throw new Error('Entre como CEO para publicar no Instagram.');
+  if(!isCEO()) throw new Error('Entre como CEO para publicar no Instagram.');
   if(!p.image_url) throw new Error('Este produto não possui imagem cadastrada.');
 
   const response = await fetch(SUPABASE_URL + '/functions/v1/instagram-publish', {
@@ -1142,6 +1151,31 @@ $('search').addEventListener('input', e => {
 
 $('aiProduct').addEventListener('change', generateAI);
 
+async function createUserAccount(){
+  const email=$('loginEmail').value.trim().toLowerCase();
+  const password=$('loginPassword').value;
+  $('loginError').classList.add('hide');
+  if(!email||password.length<6){
+    $('loginError').textContent='Informe um e-mail válido e uma senha com pelo menos 6 caracteres.';
+    $('loginError').classList.remove('hide');
+    return;
+  }
+  if(email===CEO_EMAIL){
+    $('loginError').textContent='Esta é a conta administrativa. Use o botão Entrar.';
+    $('loginError').classList.remove('hide');
+    return;
+  }
+  const {data,error}=await sb.auth.signUp({email,password,options:{data:{role:'user'}}});
+  if(error){
+    $('loginError').textContent='Não foi possível criar a conta: '+error.message;
+    $('loginError').classList.remove('hide');
+    return;
+  }
+  $('loginPassword').value='';
+  if(!data.session) alert('Conta criada! Verifique seu e-mail para confirmar o cadastro.');
+  else alert('Conta de usuária criada e conectada!');
+}
+
 async function doLogin(){
   const email = $('loginEmail').value.trim();
   const password = $('loginPassword').value;
@@ -1158,20 +1192,24 @@ async function doLogout(){
   await sb.auth.signOut();
 }
 function updateAuthUI(){
-  const logged = !!session;
-  $('navLogin').textContent = logged ? '🔓 Sair (CEO)' : '🔐 Login CEO';
-  $('authBadge').textContent = logged ? '🔓 CEO autenticado' : '🔒 Visitante';
-  $('authBadge').className = 'authBadge ' + (logged ? 'on' : 'off');
-  $('loginFormWrap').classList.toggle('hide', logged);
-  $('loggedInWrap').classList.toggle('hide', !logged);
-  if(logged) $('loggedEmail').textContent = session.user.email;
-  $('btnAddProduct').disabled = !logged;
-  $('shopeeCsv').disabled = !logged;
-  $('btnAnalyzeCsv').disabled = !logged;
-  $('importLockedNote').classList.toggle('hide', logged);
-  $('productsLockedNote').classList.toggle('hide', logged);
-  if(logged) loadAdminProducts();
-  else { adminProducts = []; closeProductForm(); }
+  const logged=!!session;
+  const ceo=isCEO();
+  $('navLogin').textContent=logged?'🔓 Sair':'👤 Entrar / Conta';
+  $('authBadge').textContent=ceo?'🔓 CEO autenticado':logged?'👤 Usuária':'🛍️ Visitante';
+  $('authBadge').className='authBadge '+(logged?'on':'off');
+  $('loginFormWrap').classList.toggle('hide',logged);
+  $('loggedInWrap').classList.toggle('hide',!logged);
+  if(logged){
+    $('loggedEmail').textContent=session.user.email;
+    $('loggedRole').textContent=ceo?'CEO':'Usuária';
+  }
+  $('btnAddProduct').disabled=!ceo;
+  $('shopeeCsv').disabled=!ceo;
+  $('btnAnalyzeCsv').disabled=!ceo;
+  $('importLockedNote').classList.toggle('hide',ceo);
+  $('productsLockedNote').classList.toggle('hide',ceo);
+  if(ceo) loadAdminProducts();
+  else { adminProducts=[]; closeProductForm(); }
   renderProducts();
 }
 sb.auth.onAuthStateChange((_event, sess) => {
@@ -1180,7 +1218,7 @@ sb.auth.onAuthStateChange((_event, sess) => {
 });
 
 async function loadAdminProducts(){
-  if(!session) return;
+  if(!isCEO()) return;
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*&order=created_at.desc`, {
       headers: {
@@ -1198,7 +1236,7 @@ async function loadAdminProducts(){
 }
 
 function openProductForm(id=null){
-  if(!session) return;
+  if(!isCEO()) return;
   editingProductId = id;
   const p = id ? adminProducts.find(x=>String(x.id)===String(id)) : null;
   $('productModalTitle').textContent = p ? 'Editar produto' : 'Novo produto';
@@ -1217,7 +1255,7 @@ function closeProductForm(){
   $('productModal').classList.add('hide');
 }
 async function submitProductForm(){
-  if(!session) return;
+  if(!isCEO()) return;
   const payload = {
     name: $('fName').value.trim(),
     description: $('fDescription').value.trim(),
@@ -1257,7 +1295,7 @@ async function submitProductForm(){
   }
 }
 async function removeProduct(id){
-  if(!session) return;
+  if(!isCEO()) return;
   if(!confirm('Excluir este produto definitivamente?')) return;
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
@@ -1291,7 +1329,7 @@ function applyImportNiche(){
 function shopeeScore(row){return (Number(row.item_rating)||0)*12+(Number(row.shop_rating)||0)*5+Math.min(Number(row.discount_percentage)||0,70)*.55+Math.log10((Number(row.like)||0)+1)*2}
 
 function analyzeShopeeCsv(){
-  if(!session)return alert('Entre como CEO para importar produtos.');
+  if(!isCEO())return alert('Entre como CEO para importar produtos.');
   const file=$('shopeeCsv').files[0];
   if(!file)return alert('Selecione o arquivo CSV baixado da Shopee.');
   if(typeof Papa==='undefined')return alert('O leitor de CSV não carregou. Verifique sua internet e atualize a página.');
@@ -1319,7 +1357,7 @@ function toggleImportCandidate(index,checked){if(shopeeCandidates[index])shopeeC
 function selectAllImport(checked){shopeeCandidates.forEach(p=>p.selected=checked);renderShopeeCandidates()}
 function updateImportCount(){const n=shopeeCandidates.filter(p=>p.selected).length;if($('importCount'))$('importCount').textContent=n+' selecionado'+(n===1?'':'s')}
 async function importSelectedShopee(){
-  if(!session)return alert('Entre como CEO para importar produtos.');const selected=shopeeCandidates.filter(p=>p.selected);if(!selected.length)return alert('Marque pelo menos um produto.');
+  if(!isCEO())return alert('Entre como CEO para importar produtos.');const selected=shopeeCandidates.filter(p=>p.selected);if(!selected.length)return alert('Marque pelo menos um produto.');
   const existing=new Set(adminProducts.map(p=>p.affiliate_url).filter(Boolean)),fresh=selected.filter(p=>!existing.has(p.affiliate_url)),skipped=selected.length-fresh.length;if(!fresh.length)return alert('Todos os produtos selecionados já estão cadastrados.');
   $('btnImportSelected').disabled=true;$('importStatus').textContent=`Importando e publicando ${fresh.length} produtos autorizados...`;
   try{let done=0;for(let i=0;i<fresh.length;i+=20){const payload=fresh.slice(i,i+20).map(p=>({name:p.name,description:p.description,price:p.price,platform:'Shopee',category:p.category,image_url:p.image_url,affiliate_url:p.affiliate_url,status:'active'}));const r=await fetch(`${SUPABASE_URL}/rest/v1/products`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(payload)});if(!r.ok)throw new Error('HTTP '+r.status+' — '+await r.text());done+=payload.length;$('importStatus').textContent=`${done} de ${fresh.length} produtos publicados...`}$('importStatus').textContent=`Sucesso: ${fresh.length} produtos publicados na vitrine${skipped?` · ${skipped} repetidos ignorados`:''}.`;await loadAdminProducts();await loadProducts()}
