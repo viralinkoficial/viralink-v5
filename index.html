@@ -708,7 +708,36 @@ function copyAIOutput(){
 
 
 let validatorFilter='all';
+const VALIDATOR_IMAGE_CACHE_KEY='viralink_validator_images_v1';
 const validatorImageStatus=new Map();
+
+function loadValidatorImageCache(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(VALIDATOR_IMAGE_CACHE_KEY)||'{}');
+    Object.entries(saved).forEach(([id,item])=>{
+      if(item&&typeof item.ok==='boolean') validatorImageStatus.set(String(id),item.ok);
+    });
+  }catch(_){}
+}
+
+function saveValidatorImageCache(source){
+  const saved={};
+  (source||validatorProducts()).forEach(p=>{
+    const id=String(p.id), ok=validatorImageStatus.get(id);
+    if(typeof ok==='boolean') saved[id]={ok,url:String(p.image_url||''),checkedAt:new Date().toISOString()};
+  });
+  localStorage.setItem(VALIDATOR_IMAGE_CACHE_KEY,JSON.stringify(saved));
+}
+
+function syncValidatorImageCache(source){
+  try{
+    const saved=JSON.parse(localStorage.getItem(VALIDATOR_IMAGE_CACHE_KEY)||'{}');
+    (source||validatorProducts()).forEach(p=>{
+      const item=saved[String(p.id)];
+      if(item&&item.url===String(p.image_url||'')&&typeof item.ok==='boolean') validatorImageStatus.set(String(p.id),item.ok);
+    });
+  }catch(_){}
+}
 
 function validatorProducts(){
   return isCEO() && adminProducts.length ? adminProducts : products;
@@ -730,15 +759,17 @@ function productQuality(p){
 
 function renderResultsCenter(){
   const list=Array.isArray(products)?products:[];
+  syncValidatorImageCache(list);
   const ranked=list.map(p=>({product:p,...productQuality(p)})).sort((a,b)=>b.score-a.score);
   const ready=ranked.filter(x=>x.status==='ready').length;
   const health=list.length?Math.round(ranked.reduce((sum,x)=>sum+x.score,0)/list.length):0;
   const scheduled=resultsLocalCount(YOUTUBE_SCHEDULED_KEY)+resultsLocalCount(FACEBOOK_SCHEDULED_KEY);
   $('resultsProducts').textContent=list.length;
-  $('resultsReady').textContent=ready;
+  const hasValidation=validatorImageStatus.size>0;
+  $('resultsReady').textContent=hasValidation?ready:'—';
   $('resultsScheduled').textContent=scheduled;
   $('resultsSales').textContent='—';
-  $('resultsHealthText').textContent=health+'% de qualidade média • '+ready+' produto(s) aptos';
+  $('resultsHealthText').textContent=health+'% de qualidade média • '+(hasValidation?ready+' produto(s) aptos':'validação de imagens pendente');
   $('resultsHealthBar').style.width=health+'%';
   $('resultsRanking').innerHTML=ranked.slice(0,20).map((x,index)=>{
     const p=x.product;
@@ -750,6 +781,7 @@ function renderResultsCenter(){
   $('resultsConnections').innerHTML=
     '<p>'+(youtube?'✅':'⚠️')+' YouTube: '+(youtube?'token encontrado neste aparelho':'token não encontrado neste aparelho')+'</p>'+
     '<p>'+(blogger?'✅':'⚠️')+' Blogger: '+(blogger?'token encontrado neste aparelho':'token não encontrado neste aparelho')+'</p>'+
+    '<p>'+(hasValidation?'✅ Validador: resultados sincronizados neste aparelho.':'⚠️ Validador: toque em "Validar todos" para sincronizar os resultados.')+'</p>'+
     '<p>⏳ Cliques e vendas: aguardando a implantação do rastreamento no Supabase.</p>';
 }
 
@@ -780,7 +812,9 @@ function analyzeProduct(p){
 }
 
 function renderProductValidator(){
-  const source=validatorProducts(), analyses=source.map(analyzeProduct);
+  const source=validatorProducts();
+  syncValidatorImageCache(source);
+  const analyses=source.map(analyzeProduct);
   const counts={ready:0,attention:0,blocked:0};
   analyses.forEach(a=>counts[a.status]++);
   $('validatorTotal').textContent=analyses.length;
@@ -822,6 +856,7 @@ async function runProductValidator(){
   state.textContent='Testando '+source.length+' imagem(ns)…';
   let checked=0;
   await Promise.all(source.map(async p=>{await testProductImage(p);checked++;state.textContent='Testando imagens… '+checked+'/'+source.length;}));
+  saveValidatorImageCache(source);
   renderProductValidator();
   const ready=source.map(analyzeProduct).filter(a=>a.status==='ready').length;
   state.textContent='Validação concluída ✅ '+ready+' produto(s) prontos para o Robô Central.';
