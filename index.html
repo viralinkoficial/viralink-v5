@@ -79,7 +79,7 @@ body.ceoMode .productAdminBtns{display:flex}
 
 @media(max-width:950px){.app{grid-template-columns:1fr}.side{height:auto;position:static}.nav{display:flex;overflow:auto}.nav button{min-width:max-content}.grid4,.goalgrid,.actions,.importGrid{grid-template-columns:1fr}.main{padding:18px}}
 .legalFooter{margin:26px 0 8px;padding:18px;text-align:center;background:#0d1a2e;border:1px solid #25344f;border-radius:14px;color:#9fb0c9}.legalFooter strong{display:block;color:#f8fafc;margin-bottom:8px}.legalFooter a{color:#c4b5fd;margin:0 8px;white-space:nowrap}.robotChannels{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin:14px 0}.robotChannel{display:flex;gap:9px;align-items:center;background:#081525;border:1px solid #2a3b57;border-radius:11px;padding:11px}.robotTable{width:100%;border-collapse:collapse}.robotTable th,.robotTable td{padding:10px;border-bottom:1px solid #25344f;text-align:left;font-size:13px}.robotTable th{color:#c4b5fd}.robotTableWrap{overflow:auto;max-height:520px;border:1px solid #25344f;border-radius:12px;margin-top:14px}
-</style>
+.validatorFilters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.validatorTable{width:100%;border-collapse:collapse}.validatorTable th,.validatorTable td{padding:10px;border-bottom:1px solid #25344f;text-align:left;font-size:13px;vertical-align:top}.validatorTable th{color:#c4b5fd}.validatorTableWrap{overflow:auto;max-height:560px;border:1px solid #25344f;border-radius:12px}.validationIssues{margin:5px 0 0;padding-left:18px;color:#b4c2d7}.validationIssues li{margin:2px 0}.vReady{color:#4ade80}.vAttention{color:#fde68a}.vBlocked{color:#fca5a5}</style>
 </head>
 <body>
 <div class="app">
@@ -88,7 +88,7 @@ body.ceoMode .productAdminBtns{display:flex}
   <div class="nav">
     <button data-page="dashboard" class="active">🏠 Dashboard</button>
     <button data-page="products">🛍 Produtos</button>
-    <button data-page="shopeeImport">🟠 Importar Shopee</button>
+    <button data-page="validator">✅ Validador</button>\n    <button data-page="shopeeImport">🟠 Importar Shopee</button>
     <button data-page="store">✨ Minha Vitrine</button>
     <button data-page="ai">✨ IA Creator</button>
     <button data-page="robot">🤖 Robô Central</button>\n    <button data-page="publications">📤 Publicações</button>
@@ -130,6 +130,33 @@ body.ceoMode .productAdminBtns{display:flex}
     <button class="action" onclick="showPage('store')">🛍 Abrir minha vitrine</button>
   </div>
   <div class="note"><b>Segurança:</b> visitantes veem somente produtos ativos. Cadastrar, editar e excluir produtos exige login do CEO (Supabase Authentication).</div>
+</section>
+
+<section id="validator" class="page hide">
+  <h1>✅ Validador de Produtos</h1>
+  <div class="sub">Confira quais produtos estão prontos para o Robô Central antes de publicar.</div>
+  <div class="grid4" style="margin-top:16px">
+    <div class="card metric">Analisados<b id="validatorTotal">0</b><span class="muted">Produtos encontrados</span></div>
+    <div class="card metric">Prontos<b id="validatorReady" class="vReady">0</b><span class="muted">Aptos para publicar</span></div>
+    <div class="card metric">Atenção<b id="validatorAttention" class="vAttention">0</b><span class="muted">Podem ser melhorados</span></div>
+    <div class="card metric">Bloqueados<b id="validatorBlocked" class="vBlocked">0</b><span class="muted">Não devem ser publicados</span></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="row">
+      <button class="btn green" id="btnRunValidator" onclick="runProductValidator()">🔎 Validar todos</button>
+      <button class="btn secondary" onclick="setValidatorFilter('all')">Todos</button>
+      <button class="btn secondary" onclick="setValidatorFilter('ready')">Prontos</button>
+      <button class="btn secondary" onclick="setValidatorFilter('attention')">Atenção</button>
+      <button class="btn secondary" onclick="setValidatorFilter('blocked')">Bloqueados</button>
+    </div>
+    <div id="validatorState" class="muted" style="margin-top:10px">Toque em “Validar todos” para testar as imagens e analisar os dados.</div>
+    <div class="validatorTableWrap" style="margin-top:14px">
+      <table class="validatorTable">
+        <thead><tr><th>Produto</th><th>Resultado</th><th>Problemas</th><th>Ação</th></tr></thead>
+        <tbody id="validatorRows"><tr><td colspan="4" class="muted">Nenhum produto analisado.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
 </section>
 
 <section id="shopeeImport" class="page hide">
@@ -380,6 +407,7 @@ function showPage(id){
   if(id==='products') renderProducts();
   if(id==='ai') fillAI();
   if(id==='publications') fillPublications();
+  if(id==='validator') renderProductValidator();
   if(id==='shopeeImport') updateImportCount();
   if(id==='robot') loadCentralRobot();
 }
@@ -635,6 +663,93 @@ function copyAIOutput(){
   }
 }
 
+
+let validatorFilter='all';
+const validatorImageStatus=new Map();
+
+function validatorProducts(){
+  return isCEO() && adminProducts.length ? adminProducts : products;
+}
+
+function validHttpsUrl(value){
+  try{
+    const url=new URL(String(value||''));
+    return url.protocol==='https:' && !!url.hostname;
+  }catch(_){return false;}
+}
+
+function analyzeProduct(p){
+  const blocked=[], warnings=[];
+  const name=String(p.name||'').trim(), description=String(p.description||'').trim();
+  if(!name) blocked.push('Título ausente');
+  else if(name.length>100) warnings.push('Título com mais de 100 caracteres');
+  if(p.price==null||!Number.isFinite(Number(p.price))||Number(p.price)<=0) blocked.push('Preço inválido ou ausente');
+  if(!validHttpsUrl(p.affiliate_url)) blocked.push('Link de afiliada HTTPS ausente ou inválido');
+  if(!validHttpsUrl(p.image_url)) blocked.push('Imagem HTTPS ausente ou inválida');
+  const imageState=validatorImageStatus.get(String(p.id));
+  if(imageState===false) blocked.push('Imagem não carregou');
+  else if(imageState==null&&validHttpsUrl(p.image_url)) warnings.push('Imagem ainda não testada');
+  if(description.length<40) warnings.push('Descrição muito curta');
+  if(description.length>900) warnings.push('Descrição muito longa');
+  if(!String(p.category||'').trim()) warnings.push('Categoria ausente');
+  if(!String(p.platform||'').trim()) warnings.push('Plataforma ausente');
+  const status=blocked.length?'blocked':warnings.length?'attention':'ready';
+  return {p,status,blocked,warnings,issues:[...blocked,...warnings]};
+}
+
+function renderProductValidator(){
+  const source=validatorProducts(), analyses=source.map(analyzeProduct);
+  const counts={ready:0,attention:0,blocked:0};
+  analyses.forEach(a=>counts[a.status]++);
+  $('validatorTotal').textContent=analyses.length;
+  $('validatorReady').textContent=counts.ready;
+  $('validatorAttention').textContent=counts.attention;
+  $('validatorBlocked').textContent=counts.blocked;
+  const visible=validatorFilter==='all'?analyses:analyses.filter(a=>a.status===validatorFilter);
+  $('validatorRows').innerHTML=visible.length?visible.map(a=>{
+    const labels={ready:'Pronto',attention:'Atenção',blocked:'Bloqueado'};
+    const classes={ready:'vReady',attention:'vAttention',blocked:'vBlocked'};
+    const issues=a.issues.length?'<ul class="validationIssues">'+a.issues.map(i=>'<li>'+escapeHtml(i)+'</li>').join('')+'</ul>':'Nenhum problema encontrado';
+    const edit=isCEO()?'<button class="btn secondary small" onclick="openValidatorEditor(\''+String(a.p.id).replace(/'/g,'')+'\')">Editar</button>':'—';
+    return '<tr><td><b>'+escapeHtml(a.p.name||'Sem título')+'</b><br><span class="muted">'+escapeHtml(a.p.platform||'Sem plataforma')+'</span></td><td><b class="'+classes[a.status]+'">'+labels[a.status]+'</b></td><td>'+issues+'</td><td>'+edit+'</td></tr>';
+  }).join(''):'<tr><td colspan="4" class="muted">Nenhum produto neste filtro.</td></tr>';
+}
+
+function setValidatorFilter(filter){
+  validatorFilter=filter;
+  renderProductValidator();
+}
+
+function testProductImage(p){
+  return new Promise(resolve=>{
+    if(!validHttpsUrl(p.image_url)){validatorImageStatus.set(String(p.id),false);return resolve(false);}
+    const img=new Image();
+    const done=value=>{validatorImageStatus.set(String(p.id),value);resolve(value);};
+    img.onload=()=>done(img.naturalWidth>0&&img.naturalHeight>0);
+    img.onerror=()=>done(false);
+    img.src=p.image_url+(String(p.image_url).includes('?')?'&':'?')+'viralink_check='+Date.now();
+    setTimeout(()=>{if(!validatorImageStatus.has(String(p.id)))done(false)},8000);
+  });
+}
+
+async function runProductValidator(){
+  const source=validatorProducts(), button=$('btnRunValidator'), state=$('validatorState');
+  button.disabled=true;
+  validatorImageStatus.clear();
+  renderProductValidator();
+  state.textContent='Testando '+source.length+' imagem(ns)…';
+  let checked=0;
+  await Promise.all(source.map(async p=>{await testProductImage(p);checked++;state.textContent='Testando imagens… '+checked+'/'+source.length;}));
+  renderProductValidator();
+  const ready=source.map(analyzeProduct).filter(a=>a.status==='ready').length;
+  state.textContent='Validação concluída ✅ '+ready+' produto(s) prontos para o Robô Central.';
+  button.disabled=false;
+}
+
+function openValidatorEditor(id){
+  showPage('products');
+  openProductForm(String(id));
+}
 
 const ROBOT_CHANNEL_LABELS={instagram:'Instagram',youtube:'YouTube',facebook:'Facebook',pinterest:'Pinterest',blogger:'Blogger',tiktok:'TikTok',whatsapp:'WhatsApp'};
 const ROBOT_STATUS_LABELS={pending:'Pendente',processing:'Processando',scheduled:'Programada',published:'Publicada',failed:'Erro',paused:'Pausada',cancelled:'Cancelada'};
