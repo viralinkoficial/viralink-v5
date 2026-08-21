@@ -47,7 +47,8 @@ async function graphPost(path: string, values: Record<string, string>) {
 }
 
 async function publishInstagram(item: QueueItem) {
-  const accountId = Deno.env.get("INSTAGRAM_BUSINESS_ID") || Deno.env.get("INSTAGRAM_USER_ID") || "";\n  if (!accountId) throw new PauseError("Configuração ausente: INSTAGRAM_BUSINESS_ID ou INSTAGRAM_USER_ID");
+  const accountId = Deno.env.get("INSTAGRAM_BUSINESS_ID") || Deno.env.get("INSTAGRAM_USER_ID") || "";
+  if (!accountId) throw new PauseError("Configuração ausente: INSTAGRAM_BUSINESS_ID ou INSTAGRAM_USER_ID");
   const accessToken = required("INSTAGRAM_ACCESS_TOKEN");
   const imageUrl = String(item.payload.image_url || "");
   if (!imageUrl.startsWith("https://")) throw new PauseError("Imagem HTTPS ausente.");
