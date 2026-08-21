@@ -715,7 +715,7 @@ function loadValidatorImageCache(){
   try{
     const saved=JSON.parse(localStorage.getItem(VALIDATOR_IMAGE_CACHE_KEY)||'{}');
     Object.entries(saved).forEach(([id,item])=>{
-      if(item&&typeof item.ok==='boolean') validatorImageStatus.set(String(id),item.ok);
+      if(item&&item.ok===true) validatorImageStatus.set(String(id),true);
     });
   }catch(_){}
 }
@@ -724,7 +724,7 @@ function saveValidatorImageCache(source){
   const saved={};
   (source||validatorProducts()).forEach(p=>{
     const id=String(p.id), ok=validatorImageStatus.get(id);
-    if(typeof ok==='boolean') saved[id]={ok,url:String(p.image_url||''),checkedAt:new Date().toISOString()};
+    if(ok===true) saved[id]={ok:true,url:String(p.image_url||''),checkedAt:new Date().toISOString()};
   });
   localStorage.setItem(VALIDATOR_IMAGE_CACHE_KEY,JSON.stringify(saved));
 }
@@ -734,7 +734,7 @@ function syncValidatorImageCache(source){
     const saved=JSON.parse(localStorage.getItem(VALIDATOR_IMAGE_CACHE_KEY)||'{}');
     (source||validatorProducts()).forEach(p=>{
       const item=saved[String(p.id)];
-      if(item&&item.url===String(p.image_url||'')&&typeof item.ok==='boolean') validatorImageStatus.set(String(p.id),item.ok);
+      if(item&&item.url===String(p.image_url||'')&&item.ok===true) validatorImageStatus.set(String(p.id),true);
     });
   }catch(_){}
 }
@@ -801,8 +801,7 @@ function analyzeProduct(p){
   if(!validHttpsUrl(p.affiliate_url)) blocked.push('Link de afiliada HTTPS ausente ou inválido');
   if(!validHttpsUrl(p.image_url)) blocked.push('Imagem HTTPS ausente ou inválida');
   const imageState=validatorImageStatus.get(String(p.id));
-  if(imageState===false) blocked.push('Imagem não carregou');
-  else if(imageState==null&&validHttpsUrl(p.image_url)) warnings.push('Imagem ainda não testada');
+  if(imageState==null&&validHttpsUrl(p.image_url)) warnings.push('Imagem não confirmada — teste temporário ou pendente');
   if(description.length<40) warnings.push('Descrição muito curta');
   if(description.length>900) warnings.push('Descrição muito longa');
   if(!String(p.category||'').trim()) warnings.push('Categoria ausente');
@@ -840,13 +839,20 @@ function setValidatorFilter(filter){
 
 function testProductImage(p){
   return new Promise(resolve=>{
-    if(!validHttpsUrl(p.image_url)){validatorImageStatus.set(String(p.id),false);return resolve(false);}
+    if(!validHttpsUrl(p.image_url)) return resolve(null);
     const img=new Image();
-    const done=value=>{validatorImageStatus.set(String(p.id),value);resolve(value);};
-    img.onload=()=>done(img.naturalWidth>0&&img.naturalHeight>0);
-    img.onerror=()=>done(false);
-    img.src=p.image_url+(String(p.image_url).includes('?')?'&':'?')+'viralink_check='+Date.now();
-    setTimeout(()=>{if(!validatorImageStatus.has(String(p.id)))done(false)},8000);
+    let settled=false;
+    const done=value=>{
+      if(settled) return;
+      settled=true;
+      if(value===true) validatorImageStatus.set(String(p.id),true);
+      else validatorImageStatus.delete(String(p.id));
+      resolve(value);
+    };
+    img.onload=()=>done(img.naturalWidth>0&&img.naturalHeight>0?true:null);
+    img.onerror=()=>done(null);
+    img.src=p.image_url;
+    setTimeout(()=>done(null),10000);
   });
 }
 
@@ -857,7 +863,12 @@ async function runProductValidator(){
   renderProductValidator();
   state.textContent='Testando '+source.length+' imagem(ns)…';
   let checked=0;
-  await Promise.all(source.map(async p=>{await testProductImage(p);checked++;state.textContent='Testando imagens… '+checked+'/'+source.length;}));
+  localStorage.removeItem(VALIDATOR_IMAGE_CACHE_KEY);
+  const batchSize=6;
+  for(let start=0;start<source.length;start+=batchSize){
+    const batch=source.slice(start,start+batchSize);
+    await Promise.all(batch.map(async p=>{await testProductImage(p);checked++;state.textContent='Testando imagens com segurança… '+checked+'/'+source.length;}));
+  }
   saveValidatorImageCache(source);
   renderProductValidator();
   const ready=source.map(analyzeProduct).filter(a=>a.status==='ready').length;
