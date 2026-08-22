@@ -78,7 +78,7 @@ def poster(product, out):
 
 def make_video(poster_path, out):
     # Trilha instrumental simples, criada pelo próprio processo (sem música protegida).
-    audio="[0:a]volume=0.06[a0];[1:a]volume=0.04[a1];[a0][a1]amix=2,afade=t=in:d=1,afade=t=out:st=20:d=2[a]"
+    audio="[1:a]volume=0.06[a0];[2:a]volume=0.04[a1];[a0][a1]amix=2,afade=t=in:d=1,afade=t=out:st=20:d=2[a]"
     subprocess.run(["ffmpeg","-y","-loop","1","-i",str(poster_path),
       "-f","lavfi","-i","sine=frequency=220:duration=22",
       "-f","lavfi","-i","sine=frequency=329.63:duration=22",
