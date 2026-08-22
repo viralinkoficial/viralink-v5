@@ -2,8 +2,8 @@ name: Publicar YouTube Shorts
 
 on:
   schedule:
-    # 12h, 18h e 21h em Belém (UTC-3)
-    - cron: "0 15,21,0 * * *"
+    # 9h, 12h, 15h, 18h e 21h em Belém (UTC-3)
+    - cron: "0 12,15,18,21,0 * * *"
   workflow_dispatch:
 
 concurrency:
