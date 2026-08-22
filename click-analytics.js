@@ -66,3 +66,4 @@ async function loadClickAnalytics() {
     $('clickSummary').textContent = 'Ative a estrutura de cliques no Supabase para carregar os dados.';
   }
 }
+\ndocument.addEventListener('click', function (event) {\n  const link = event.target.closest('[data-click-product]');\n  if (link) trackProductClick(link.dataset.clickProduct, link.dataset.clickSource || 'vitrine');\n});\n
