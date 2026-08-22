@@ -21,8 +21,36 @@ def api(method, path, **kwargs):
 def claim_job():
     jobs = api("GET", "campaign_queue?channel=eq.youtube&status=eq.pending&scheduled_for=lte.now()&order=scheduled_for.asc&limit=1&select=*")
     if not jobs:
-        print("Nenhum Short pendente.")
-        return None
+        # Fila vazia: o próprio robô escolhe um produto que ainda não foi publicado.
+        used = api("GET", "campaign_queue?channel=eq.youtube&status=eq.published&select=product_id&order=created_at.desc&limit=100") or []
+        used_ids = {str(item["product_id"]) for item in used}
+        products = api("GET", "products?status=eq.active&image_url=not.is.null&affiliate_url=not.is.null&select=id,name&order=created_at.asc&limit=100") or []
+        product = next((item for item in products if str(item["id"]) not in used_ids), None)
+        if not product:
+            # Quando todos já foram usados, inicia uma nova rodada pelo mais antigo.
+            product = products[0] if products else None
+        if not product:
+            print("Nenhum produto ativo com imagem e link.")
+            return None
+
+        users_response = requests.get(f"{SB}/auth/v1/admin/users?page=1&per_page=1000", headers=HEADERS, timeout=45)
+        users_response.raise_for_status()
+        users = users_response.json().get("users", [])
+        owner = next((u for u in users if str(u.get("email","")).lower() == "vivianeferreiracaroline@gmail.com"), None)
+        if not owner:
+            raise RuntimeError("Conta CEO não encontrada no Supabase Auth.")
+
+        created = api("POST", "campaign_queue", headers={**HEADERS, "Prefer":"return=representation"}, json={
+            "product_id": str(product["id"]),
+            "product_name": product.get("name") or "Produto",
+            "channel": "youtube",
+            "scheduled_for": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+            "status": "pending",
+            "payload": {"automatic": True},
+            "created_by": owner["id"]
+        })
+        jobs = created or []
+
     job = jobs[0]
     api("PATCH", f"campaign_queue?id=eq.{job['id']}", json={"status":"processing","attempts":int(job.get("attempts",0))+1,"error_message":None})
     return job
