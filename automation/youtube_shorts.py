@@ -40,16 +40,18 @@ def claim_job():
         if not owner:
             raise RuntimeError("Conta CEO não encontrada no Supabase Auth.")
 
-        created = api("POST", "campaign_queue", headers={**HEADERS, "Prefer":"return=representation"}, json={
-            "product_id": str(product["id"]),
-            "product_name": product.get("name") or "Produto",
-            "channel": "youtube",
-            "scheduled_for": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
-            "status": "pending",
-            "payload": {"automatic": True},
-            "created_by": owner["id"]
-        })
-        jobs = created or []
+        create_response = requests.post(f"{SB}/rest/v1/campaign_queue",
+            headers={**HEADERS, "Prefer":"return=representation"}, timeout=45, json={
+                "product_id": str(product["id"]),
+                "product_name": product.get("name") or "Produto",
+                "channel": "youtube",
+                "scheduled_for": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+                "status": "pending",
+                "payload": {"automatic": True},
+                "created_by": owner["id"]
+            })
+        create_response.raise_for_status()
+        jobs = create_response.json()
 
     job = jobs[0]
     api("PATCH", f"campaign_queue?id=eq.{job['id']}", json={"status":"processing","attempts":int(job.get("attempts",0))+1,"error_message":None})
