@@ -5,8 +5,8 @@ Esta automação usa a fila `campaign_queue` já existente no VIRALINK.
 ## Fluxo
 
 1. O Robô Central coloca produtos no canal `youtube`.
-2. O GitHub Actions executa às 12h, 18h e 21h (horário de Belém).
-3. A imagem do produto vira um vídeo vertical de 22 segundos com texto e trilha instrumental própria.
+2. O GitHub Actions executa às 9h, 12h, 15h, 18h e 21h (horário de Belém).
+3. A imagem do produto vira um vídeo vertical de 22 segundos com textos e trilha instrumental própria, sem narração externa.
 4. O vídeo é publicado como público no YouTube e o ID fica registrado na fila.
 5. Falhas são tentadas novamente até três vezes.
 

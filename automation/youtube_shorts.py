@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Cria e publica um Short a partir da fila do VIRALINK."""
 
-import os, subprocess, tempfile, textwrap, asyncio, re
+import os, subprocess, tempfile
 from pathlib import Path
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
-import edge_tts
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
@@ -107,35 +106,15 @@ def poster(product, out):
     d.text((540,1815),"#Shorts  #Achadinhos  #VIRALINK",font=font(30),anchor="mm",fill=(220,210,255))
     canvas.save(out,quality=95)
 
-def narration(product):
-    name = re.sub(r"\\s+", " ", str(product.get("name") or "este achadinho")).strip()
-    description = re.sub(r"\\s+", " ", str(product.get("description") or "")).strip()
-    details = description[:520].rsplit(" ", 1)[0] if len(description) > 520 else description
-    price = product.get("price")
-    price_text = ""
-    if price is not None:
-        value = f"{float(price):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        price_text = f" Ele está por {value} reais."
-    return (
-        f"Olha este achadinho: {name}. "
-        f"{details} {price_text} "
-        "Confira as informações e o link para comprar na descrição do vídeo."
-    )
-
-async def make_voice(text, out):
-    speaker = edge_tts.Communicate(text=text, voice="pt-BR-FranciscaNeural", rate="+4%")
-    await speaker.save(str(out))
-
-def make_video(poster_path, voice_path, out):
-    # Voz principal com trilha instrumental própria e discreta ao fundo.
-    audio=("[1:a]volume=1.25[voice];"
-           "[2:a]volume=0.025[m0];[3:a]volume=0.018[m1];"
-           "[voice][m0][m1]amix=inputs=3:duration=first,"
-           "afade=t=in:d=0.4[a]")
-    subprocess.run(["ffmpeg","-y","-loop","1","-i",str(poster_path),"-i",str(voice_path),
-      "-f","lavfi","-i","sine=frequency=220:duration=60",
-      "-f","lavfi","-i","sine=frequency=329.63:duration=60",
-      "-filter_complex",audio,"-map","0:v","-map","[a]","-shortest",
+def make_video(poster_path, out):
+    # Trilha instrumental gerada localmente: não depende de narração ou serviço externo.
+    audio=("[1:a]volume=0.045[a0];[2:a]volume=0.03[a1];"
+           "[a0][a1]amix=inputs=2:duration=longest,"
+           "afade=t=in:d=0.6,afade=t=out:st=20:d=2[a]")
+    subprocess.run(["ffmpeg","-y","-loop","1","-i",str(poster_path),
+      "-f","lavfi","-i","sine=frequency=220:duration=22",
+      "-f","lavfi","-i","sine=frequency=329.63:duration=22",
+      "-filter_complex",audio,"-map","0:v","-map","[a]","-t","22",
       "-vf","scale=1080:1920,format=yuv420p","-r","30","-c:v","libx264","-preset","medium",
       "-c:a","aac","-b:a","160k","-movflags","+faststart",str(out)],check=True)
 
@@ -162,10 +141,9 @@ def main():
     try:
         product=product_for(job)
         with tempfile.TemporaryDirectory() as td:
-            poster_path=Path(td)/"poster.jpg"; voice_path=Path(td)/"voice.mp3"; video=Path(td)/"short.mp4"
+            poster_path=Path(td)/"poster.jpg"; video=Path(td)/"short.mp4"
             poster(product,poster_path)
-            asyncio.run(make_voice(narration(product),voice_path))
-            make_video(poster_path,voice_path,video)
+            make_video(poster_path,video)
             video_id=upload(video,product)
         api("PATCH",f"campaign_queue?id=eq.{job['id']}",json={"status":"published","external_id":video_id,"error_message":None})
         print(f"Publicado: https://youtube.com/shorts/{video_id}")
