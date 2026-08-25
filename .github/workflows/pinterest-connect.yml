@@ -1,0 +1,67 @@
+name: Conectar Pinterest
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  conectar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Trocar autorização por tokens
+        env:
+          PINTEREST_APP_ID: ${{ secrets.PINTEREST_APP_ID }}
+          PINTEREST_APP_SECRET: ${{ secrets.PINTEREST_APP_SECRET }}
+          PINTEREST_AUTH_CODE: ${{ secrets.PINTEREST_AUTH_CODE }}
+          REDIRECT_URI: https://viralinkoficial.github.io/viralink-v5/
+        run: |
+          set -e
+
+          HTTP_CODE=$(curl -sS -o token_response.json -w "%{http_code}" \
+            -X POST "https://api.pinterest.com/v5/oauth/token" \
+            -u "${PINTEREST_APP_ID}:${PINTEREST_APP_SECRET}" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "grant_type=authorization_code" \
+            --data-urlencode "code=${PINTEREST_AUTH_CODE}" \
+            --data-urlencode "redirect_uri=${REDIRECT_URI}")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Pinterest recusou a autorização. Código HTTP: $HTTP_CODE"
+            exit 1
+          fi
+
+          ACCESS_TOKEN=$(jq -r '.access_token // empty' token_response.json)
+          REFRESH_TOKEN=$(jq -r '.refresh_token // empty' token_response.json)
+
+          test -n "$ACCESS_TOKEN"
+          test -n "$REFRESH_TOKEN"
+
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "::add-mask::$REFRESH_TOKEN"
+
+          mkdir -p automation
+          jq -n \
+            --arg access "$ACCESS_TOKEN" \
+            --arg refresh "$REFRESH_TOKEN" \
+            '{access_token:$access,refresh_token:$refresh}' > pinterest_tokens.json
+
+          openssl enc -aes-256-cbc -pbkdf2 -salt \
+            -in pinterest_tokens.json \
+            -out automation/pinterest_tokens.enc \
+            -pass env:PINTEREST_APP_SECRET
+
+          rm -f pinterest_tokens.json token_response.json
+
+      - name: Salvar conexão protegida
+        run: |
+          git config user.name "VIRALINK Bot"
+          git config user.email "actions@github.com"
+          git add automation/pinterest_tokens.enc
+          git commit -m "Configura conexão protegida do Pinterest"
+          git push
