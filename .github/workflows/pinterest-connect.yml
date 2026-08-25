@@ -33,7 +33,7 @@ jobs:
           test -n "$AUTH_CODE"
 
           HTTP_CODE=$(curl -sS -o token_response.json -w "%{http_code}" \
-            -X POST "https://api.pinterest.com/v5/oauth/token" \
+            -X POST "https://api-sandbox.pinterest.com/v5/oauth/token" \
             -u "$APP_ID:$APP_SECRET" \
             -H "Accept: application/json" \
             -H "Content-Type: application/x-www-form-urlencoded" \
