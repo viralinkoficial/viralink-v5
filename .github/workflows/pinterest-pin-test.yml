@@ -1,0 +1,72 @@
+name: Publicar Pin de teste
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/pinterest-pin-test.trigger'
+
+permissions:
+  contents: read
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Publicar Pin real de teste
+        env:
+          PINTEREST_APP_SECRET: ${{ secrets.PINTEREST_APP_SECRET }}
+        run: |
+          set -euo pipefail
+
+          APP_SECRET="$(printf '%s' "$PINTEREST_APP_SECRET" | tr -d '\r\n')"
+          test -n "$APP_SECRET"
+
+          PINTEREST_APP_SECRET="$APP_SECRET" openssl enc -d -aes-256-cbc -pbkdf2             -in automation/pinterest_tokens.enc             -out pinterest_tokens.json             -pass env:PINTEREST_APP_SECRET
+
+          ACCESS_TOKEN="$(jq -r '.access_token // empty' pinterest_tokens.json)"
+          test -n "$ACCESS_TOKEN"
+          echo "::add-mask::$ACCESS_TOKEN"
+
+          BOARDS_STATUS=$(curl -sS -o boards.json -w "%{http_code}"             "https://api.pinterest.com/v5/boards?page_size=25"             -H "Authorization: Bearer $ACCESS_TOKEN"             -H "Accept: application/json")
+
+          if [ "$BOARDS_STATUS" != "200" ]; then
+            MESSAGE=$(jq -r '.message // "sem detalhes"' boards.json 2>/dev/null || true)
+            echo "Não foi possível listar os painéis. HTTP $BOARDS_STATUS: $MESSAGE"
+            rm -f pinterest_tokens.json boards.json
+            exit 1
+          fi
+
+          BOARD_ID="$(jq -r '.items[0].id // empty' boards.json)"
+          if [ -z "$BOARD_ID" ]; then
+            echo "A conta do Pinterest não possui um painel disponível para receber o Pin."
+            rm -f pinterest_tokens.json boards.json
+            exit 1
+          fi
+
+          jq -n             --arg board_id "$BOARD_ID"             --arg title "VIRALINK — Achadinhos do Dia"             --arg description "Pin real de teste da automação VIRALINK. Confira os produtos disponíveis na vitrine."             --arg link "https://viralinkoficial.github.io/viralink-v5/"             --arg image_url "https://placehold.co/1000x1500/30106b/ffffff/png?text=VIRALINK%0AAchadinhos+do+Dia"             '{
+              board_id: $board_id,
+              title: $title,
+              description: $description,
+              link: $link,
+              media_source: {
+                source_type: "image_url",
+                url: $image_url
+              }
+            }' > pin_payload.json
+
+          PIN_STATUS=$(curl -sS -o pin_response.json -w "%{http_code}"             -X POST "https://api.pinterest.com/v5/pins"             -H "Authorization: Bearer $ACCESS_TOKEN"             -H "Accept: application/json"             -H "Content-Type: application/json"             --data-binary @pin_payload.json)
+
+          if [ "$PIN_STATUS" != "201" ]; then
+            MESSAGE=$(jq -r '.message // "sem detalhes"' pin_response.json 2>/dev/null || true)
+            echo "Pinterest recusou o Pin. HTTP $PIN_STATUS: $MESSAGE"
+            rm -f pinterest_tokens.json boards.json pin_payload.json pin_response.json
+            exit 1
+          fi
+
+          PIN_ID="$(jq -r '.id // empty' pin_response.json)"
+          echo "Pin publicado com sucesso. ID: $PIN_ID"
+          rm -f pinterest_tokens.json boards.json pin_payload.json pin_response.json
