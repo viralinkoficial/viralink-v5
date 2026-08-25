@@ -2,6 +2,9 @@ name: Publicar Pin de teste
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/pinterest-pin-test.trigger'
 
 permissions:
   contents: read
