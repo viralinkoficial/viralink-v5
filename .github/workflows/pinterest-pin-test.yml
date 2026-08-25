@@ -2,9 +2,6 @@ name: Publicar Pin de teste
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/pinterest-pin-test.trigger'
 
 permissions:
   contents: read
@@ -31,7 +28,7 @@ jobs:
           test -n "$ACCESS_TOKEN"
           echo "::add-mask::$ACCESS_TOKEN"
 
-          BOARDS_STATUS=$(curl -sS -o boards.json -w "%{http_code}"             "https://api.pinterest.com/v5/boards?page_size=25"             -H "Authorization: Bearer $ACCESS_TOKEN"             -H "Accept: application/json")
+          BOARDS_STATUS=$(curl -sS -o boards.json -w "%{http_code}"             "https://api-sandbox.pinterest.com/v5/boards?page_size=25"             -H "Authorization: Bearer $ACCESS_TOKEN"             -H "Accept: application/json")
 
           if [ "$BOARDS_STATUS" != "200" ]; then
             MESSAGE=$(jq -r '.message // "sem detalhes"' boards.json 2>/dev/null || true)
@@ -58,7 +55,7 @@ jobs:
               }
             }' > pin_payload.json
 
-          PIN_STATUS=$(curl -sS -o pin_response.json -w "%{http_code}"             -X POST "https://api.pinterest.com/v5/pins"             -H "Authorization: Bearer $ACCESS_TOKEN"             -H "Accept: application/json"             -H "Content-Type: application/json"             --data-binary @pin_payload.json)
+          PIN_STATUS=$(curl -sS -o pin_response.json -w "%{http_code}"             -X POST "https://api-sandbox.pinterest.com/v5/pins"             -H "Authorization: Bearer $ACCESS_TOKEN"             -H "Accept: application/json"             -H "Content-Type: application/json"             --data-binary @pin_payload.json)
 
           if [ "$PIN_STATUS" != "201" ]; then
             MESSAGE=$(jq -r '.message // "sem detalhes"' pin_response.json 2>/dev/null || true)
