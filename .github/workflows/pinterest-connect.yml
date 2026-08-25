@@ -2,13 +2,6 @@ name: Conectar Pinterest
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "*/5 * * * *"
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/pinterest-connect.yml
 
 permissions:
   contents: write
@@ -84,22 +77,3 @@ jobs:
           git commit -m "Configura conexão protegida do Pinterest"
           git push
 
-      - name: Remover gatilhos temporários
-        if: always()
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p = Path(".github/workflows/pinterest-connect.yml")
-          s = p.read_text(encoding="utf-8")
-          s = s.replace('  schedule:\n    - cron: "*/5 * * * *"\n', '')
-          s = s.replace('  push:\n    branches:\n      - main\n    paths:\n      - .github/workflows/pinterest-connect.yml\n', '')
-          p.write_text(s, encoding="utf-8")
-          PY
-
-          git config user.name "VIRALINK Bot"
-          git config user.email "actions@github.com"
-          git add .github/workflows/pinterest-connect.yml
-          if ! git diff --cached --quiet; then
-            git commit -m "Remove gatilhos temporários do Pinterest"
-            git push
-          fi
