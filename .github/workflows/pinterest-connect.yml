@@ -2,9 +2,6 @@ name: Conectar Pinterest
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/pinterest-connect.trigger'
 
 permissions:
   contents: write
