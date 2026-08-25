@@ -1,1 +1,1 @@
-Executar conexão Pinterest em 2026-08-25T16:05:00Z
+Executar conexão Pinterest após confirmar a chave em 2026-08-25T16:10:00Z
