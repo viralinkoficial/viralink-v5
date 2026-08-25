@@ -35,10 +35,13 @@ jobs:
           HTTP_CODE=$(curl -sS -o token_response.json -w "%{http_code}" \
             -X POST "https://api.pinterest.com/v5/oauth/token" \
             -u "$APP_ID:$APP_SECRET" \
+            -H "Accept: application/json" \
             -H "Content-Type: application/x-www-form-urlencoded" \
+            -H "User-Agent: VIRALINK/1.0" \
             --data-urlencode "grant_type=authorization_code" \
             --data-urlencode "code=$AUTH_CODE" \
-            --data-urlencode "redirect_uri=$REDIRECT_URI")
+            --data-urlencode "redirect_uri=$REDIRECT_URI" \
+            --data-urlencode "continuous_refresh=true")
 
           if [ "$HTTP_CODE" != "200" ]; then
             ERROR_MESSAGE=$(jq -r '.message // .error_description // "sem detalhes"' token_response.json 2>/dev/null || true)
