@@ -45,7 +45,7 @@ jobs:
             jq -n '{
               name: "VIRALINK Testes",
               description: "Painel privado para validar a automação do VIRALINK.",
-              privacy: "SECRET"
+              privacy: "PUBLIC"
             }' > board_payload.json
 
             BOARD_STATUS=$(curl -sS -o board_response.json -w "%{http_code}" \
