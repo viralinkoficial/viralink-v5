@@ -2,6 +2,9 @@
 """Cria e publica um Short a partir da fila do VIRALINK."""
 
 import os, subprocess, tempfile
+
+from google.auth.transport.requests import Request as GoogleAuthRequest
+from google.auth.exceptions import RefreshError
 from pathlib import Path
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
@@ -9,8 +12,15 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-SB = os.environ["SUPABASE_URL"].rstrip("/")
-KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+def secret(name):
+    """Lê credenciais sem espaços/quebras de linha acidentais."""
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise RuntimeError(f"Segredo obrigatório ausente: {name}")
+    return value
+
+SB = secret("SUPABASE_URL").rstrip("/")
+KEY = secret("SUPABASE_SERVICE_ROLE_KEY")
 HEADERS = {"apikey": KEY, "Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
 
 def api(method, path, **kwargs):
@@ -118,12 +128,24 @@ def make_video(poster_path, out):
       "-vf","scale=1080:1920,format=yuv420p","-r","30","-c:v","libx264","-preset","medium",
       "-c:a","aac","-b:a","160k","-movflags","+faststart",str(out)],check=True)
 
-def upload(video, product):
-    creds=Credentials(None,refresh_token=os.environ["YOUTUBE_REFRESH_TOKEN"],
+def youtube_client():
+    creds = Credentials(
+      None,
+      refresh_token=secret("YOUTUBE_REFRESH_TOKEN"),
       token_uri="https://oauth2.googleapis.com/token",
-      client_id=os.environ["YOUTUBE_CLIENT_ID"],client_secret=os.environ["YOUTUBE_CLIENT_SECRET"],
+      client_id=secret("YOUTUBE_CLIENT_ID"),
+      client_secret=secret("YOUTUBE_CLIENT_SECRET"),
       scopes=["https://www.googleapis.com/auth/youtube.upload"])
-    yt=build("youtube","v3",credentials=creds,cache_discovery=False)
+    try:
+        creds.refresh(GoogleAuthRequest())
+    except RefreshError as exc:
+        raise RuntimeError(
+          "Autenticação do YouTube recusada. Gere um novo refresh token com o mesmo "
+          "Client ID/Secret e o escopo youtube.upload, depois atualize YOUTUBE_REFRESH_TOKEN."
+        ) from exc
+    return build("youtube", "v3", credentials=creds, cache_discovery=False)
+
+def upload(video, product, yt):
     title=(f"{product['name']} | Achadinho VIRALINK #Shorts")[:100]
     desc=(f"{product.get('description') or product['name']}\n\n"
           f"Compre aqui: {product['affiliate_url']}\n\n"
@@ -136,6 +158,9 @@ def upload(video, product):
     return result["id"]
 
 def main():
+    # Valida o OAuth antes de buscar produto e renderizar o vídeo.
+    yt = youtube_client()
+    print("Autenticação do YouTube validada.")
     job=claim_job()
     if not job: return
     try:
@@ -144,7 +169,7 @@ def main():
             poster_path=Path(td)/"poster.jpg"; video=Path(td)/"short.mp4"
             poster(product,poster_path)
             make_video(poster_path,video)
-            video_id=upload(video,product)
+            video_id=upload(video,product,yt)
         api("PATCH",f"campaign_queue?id=eq.{job['id']}",json={"status":"published","external_id":video_id,"error_message":None})
         print(f"Publicado: https://youtube.com/shorts/{video_id}")
     except Exception as exc:
