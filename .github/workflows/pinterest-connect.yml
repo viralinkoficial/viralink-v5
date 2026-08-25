@@ -21,18 +21,29 @@ jobs:
           PINTEREST_AUTH_CODE: ${{ secrets.PINTEREST_AUTH_CODE }}
           REDIRECT_URI: https://viralinkoficial.github.io/viralink-v5/
         run: |
-          set -e
+          set -euo pipefail
+
+          APP_ID="$(printf '%s' "$PINTEREST_APP_ID" | tr -d '\r\n')"
+          APP_SECRET="$(printf '%s' "$PINTEREST_APP_SECRET" | tr -d '\r\n')"
+          AUTH_CODE="$(printf '%s' "$PINTEREST_AUTH_CODE" | tr -d '\r\n')"
+          AUTH_CODE="$(printf '%s' "$AUTH_CODE" | sed -E 's/^.*code=//; s/&state=.*$//')"
+
+          test -n "$APP_ID"
+          test -n "$APP_SECRET"
+          test -n "$AUTH_CODE"
 
           HTTP_CODE=$(curl -sS -o token_response.json -w "%{http_code}" \
             -X POST "https://api.pinterest.com/v5/oauth/token" \
-            -u "${PINTEREST_APP_ID}:${PINTEREST_APP_SECRET}" \
+            -u "$APP_ID:$APP_SECRET" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             --data-urlencode "grant_type=authorization_code" \
-            --data-urlencode "code=${PINTEREST_AUTH_CODE}" \
-            --data-urlencode "redirect_uri=${REDIRECT_URI}")
+            --data-urlencode "code=$AUTH_CODE" \
+            --data-urlencode "redirect_uri=$REDIRECT_URI")
 
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "Pinterest recusou a autorização. Código HTTP: $HTTP_CODE"
+            ERROR_MESSAGE=$(jq -r '.message // .error_description // "sem detalhes"' token_response.json 2>/dev/null || true)
+            echo "Pinterest recusou a autorização. HTTP $HTTP_CODE: $ERROR_MESSAGE"
+            rm -f token_response.json
             exit 1
           fi
 
@@ -51,7 +62,7 @@ jobs:
             --arg refresh "$REFRESH_TOKEN" \
             '{access_token:$access,refresh_token:$refresh}' > pinterest_tokens.json
 
-          openssl enc -aes-256-cbc -pbkdf2 -salt \
+          PINTEREST_APP_SECRET="$APP_SECRET" openssl enc -aes-256-cbc -pbkdf2 -salt \
             -in pinterest_tokens.json \
             -out automation/pinterest_tokens.enc \
             -pass env:PINTEREST_APP_SECRET
