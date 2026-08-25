@@ -42,9 +42,28 @@ jobs:
 
           BOARD_ID="$(jq -r '.items[0].id // empty' boards.json)"
           if [ -z "$BOARD_ID" ]; then
-            echo "A conta do Pinterest não possui um painel disponível para receber o Pin."
-            rm -f pinterest_tokens.json boards.json
-            exit 1
+            jq -n '{
+              name: "VIRALINK Testes",
+              description: "Painel privado para validar a automação do VIRALINK.",
+              privacy: "SECRET"
+            }' > board_payload.json
+
+            BOARD_STATUS=$(curl -sS -o board_response.json -w "%{http_code}" \
+              -X POST "https://api-sandbox.pinterest.com/v5/boards" \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "Accept: application/json" \
+              -H "Content-Type: application/json" \
+              --data-binary @board_payload.json)
+
+            if [ "$BOARD_STATUS" != "201" ]; then
+              MESSAGE=$(jq -r '.message // "sem detalhes"' board_response.json 2>/dev/null || true)
+              echo "Pinterest recusou a criação do painel. HTTP $BOARD_STATUS: $MESSAGE"
+              rm -f pinterest_tokens.json boards.json board_payload.json board_response.json
+              exit 1
+            fi
+
+            BOARD_ID="$(jq -r '.id // empty' board_response.json)"
+            test -n "$BOARD_ID"
           fi
 
           jq -n             --arg board_id "$BOARD_ID"             --arg title "VIRALINK — Achadinhos do Dia"             --arg description "Pin real de teste da automação VIRALINK. Confira os produtos disponíveis na vitrine."             --arg link "https://viralinkoficial.github.io/viralink-v5/"             --arg image_url "https://placehold.co/1000x1500/30106b/ffffff/png?text=VIRALINK%0AAchadinhos+do+Dia"             '{
@@ -63,7 +82,7 @@ jobs:
           if [ "$PIN_STATUS" != "201" ]; then
             MESSAGE=$(jq -r '.message // "sem detalhes"' pin_response.json 2>/dev/null || true)
             echo "Pinterest recusou o Pin. HTTP $PIN_STATUS: $MESSAGE"
-            rm -f pinterest_tokens.json boards.json pin_payload.json pin_response.json
+            rm -f pinterest_tokens.json boards.json board_payload.json board_response.json pin_payload.json pin_response.json
             exit 1
           fi
 
