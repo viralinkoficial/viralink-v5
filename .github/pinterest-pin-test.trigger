@@ -1,1 +1,1 @@
-Criar painel e publicar Pin Sandbox em 2026-08-25T16:35:00Z
+Publicar Pin Sandbox com painel público em 2026-08-25T16:40:00Z
