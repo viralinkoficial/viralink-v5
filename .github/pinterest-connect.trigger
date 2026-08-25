@@ -1,1 +1,1 @@
-Reconectar Pinterest com boards:write em 2026-08-25T16:20:00Z
+Conectar Pinterest Sandbox em 2026-08-25T16:30:00Z
