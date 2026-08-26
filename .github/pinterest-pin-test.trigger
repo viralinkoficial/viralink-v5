@@ -1,1 +1,1 @@
-Publicar Pin Sandbox com painel público em 2026-08-25T16:40:00Z
+Testar Pin com produto real em 2026-08-25T16:50:00Z
