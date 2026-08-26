@@ -3,8 +3,9 @@ name: Publicar Pins de produtos
 on:
   workflow_dispatch:
   schedule:
-    # 09h, 12h, 15h, 18h e 21h no horário de Belém (UTC-3)
-    - cron: '0 0,12,15,18,21 * * *'
+    # 10 Pins por dia, das 08h às 21h30 no horário de Belém (UTC-3)
+    - cron: '0 11,14,17,20,23 * * *'
+    - cron: '30 0,12,15,18,21 * * *'
 
 permissions:
   contents: read
