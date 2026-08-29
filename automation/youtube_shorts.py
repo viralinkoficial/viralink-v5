@@ -147,12 +147,11 @@ def youtube_client():
 
 def upload(video, product, yt):
     title=(f"{product['name']} | Achadinho VIRALINK #Shorts")[:100]
-    raw_desc=str(product.get('description') or product['name'])
-    clean_desc=re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", " ", raw_desc)
-    clean_desc=re.sub(r"\s+", " ", clean_desc).strip()
-    footer=(f"\n\nCompre aqui: {product['affiliate_url']}\n\n"
-            "#Shorts #Achadinhos #Shopee #VIRALINK")
-    desc=clean_desc[:max(0, 4900-len(footer))]+footer
+    product_name=re.sub(r"[^\w\s.,!?:;()%-]", " ", str(product['name']))
+    product_name=re.sub(r"\s+", " ", product_name).strip()[:300]
+    desc=(f"{product_name}\n\n"
+          f"Compre aqui: {product['affiliate_url']}\n\n"
+          "#Shorts #Achadinhos #Shopee #VIRALINK")
     body={"snippet":{"title":title,"description":desc,"categoryId":"22",
       "tags":["Shorts","Achadinhos","VIRALINK","ofertas"]},
       "status":{"privacyStatus":os.getenv("YOUTUBE_PRIVACY_STATUS","public"),"selfDeclaredMadeForKids":False}}
