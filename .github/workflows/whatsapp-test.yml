@@ -1,0 +1,27 @@
+name: Enviar WhatsApp autorizado
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: whatsapp-test
+    steps:
+      - name: Baixar o VIRALINK
+        uses: actions/checkout@v4
+
+      - name: Enviar mensagem de teste autorizada
+        env:
+          WHATSAPP_ACESS_TOKEN: ${{ secrets.WHATSAPP_ACESS_TOKEN }}
+          WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}
+          WHATSAPP_RECIPIENT_OPT_IN: ${{ vars.WHATSAPP_RECIPIENT_OPT_IN }}
+          WHATSAPP_PHONE_NUMBER_ID: "1294454207088099"
+          WHATSAPP_TEMPLATE: hello_world
+          WHATSAPP_TEMPLATE_LANGUAGE: en_US
+          META_GRAPH_VERSION: v25.0
+        run: python automation/whatsapp_send.py
