@@ -1,0 +1,46 @@
+name: Implantar webhook do WhatsApp
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/whatsapp-webhook/**"
+      - "supabase/config.toml"
+      - ".github/workflows/deploy-whatsapp-webhook.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Configurar segredo do webhook
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          WHATSAPP_VERIFY_TOKEN: ${{ secrets.WHATSAPP_VERIFY_TOKEN }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+        run: |
+          test -n "$WHATSAPP_VERIFY_TOKEN" || (echo "WHATSAPP_VERIFY_TOKEN ausente" && exit 1)
+          supabase secrets set WHATSAPP_VERIFY_TOKEN="$WHATSAPP_VERIFY_TOKEN" --project-ref pfbzdktlfdotsgfarhel
+          if [ -n "$META_APP_SECRET" ]; then
+            supabase secrets set META_APP_SECRET="$META_APP_SECRET" --project-ref pfbzdktlfdotsgfarhel
+          fi
+
+      - name: Implantar whatsapp-webhook
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: >-
+          supabase functions deploy whatsapp-webhook
+          --project-ref pfbzdktlfdotsgfarhel
+          --no-verify-jwt
