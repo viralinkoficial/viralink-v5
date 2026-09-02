@@ -10,7 +10,7 @@ on:
       - ".github/workflows/facebook-reels-check.yml"
 
 jobs:
-  syntax:
+  validate:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,3 +21,45 @@ jobs:
           python-version: "3.12"
       - name: Verificar sintaxe
         run: python -m py_compile automation/facebook_reels.py automation/facebook_reels_dynamic.py automation/facebook_reels_entry.py
+      - name: Instalar dependências de teste
+        run: |
+          sudo apt-get update >/dev/null
+          sudo apt-get install -y ffmpeg fonts-dejavu-core >/dev/null
+          pip install Pillow==11.3.0 requests==2.32.4 >/dev/null
+      - name: Gerar Reel dinâmico de teste sem publicar
+        env:
+          SUPABASE_URL: https://example.com
+          SUPABASE_SERVICE_ROLE_KEY: test
+          FACEBOOK_PAGE_ID: test
+          FACEBOOK_PAGE_ACCESS_TOKEN: test
+        run: |
+          PYTHONPATH=automation python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import facebook_reels_dynamic as d
+
+          td = Path('/tmp/reel-dynamic-check')
+          td.mkdir(parents=True, exist_ok=True)
+          src = Image.new('RGB', (900, 900), (245, 245, 245))
+          product = {
+              'name': 'Produto de teste VIRALINK',
+              'description': 'Demonstração do novo modelo com movimento, preço e chamada para ação.',
+              'price': 79.90,
+              'category': 'Achadinho',
+          }
+          scenes = [
+              d.scene_hook(src, product),
+              d.scene_product(src, product),
+              d.scene_price(src, product),
+              d.scene_cta(src, product),
+          ]
+          poster = td / 'poster.jpg'
+          for idx, image in enumerate(scenes, start=1):
+              path = poster if idx == 1 else td / f'scene_{idx}.jpg'
+              image.save(path, quality=90)
+          out = td / 'reel.mp4'
+          d.dynamic_make_video(poster, out)
+          if not out.exists() or out.stat().st_size < 10000:
+              raise SystemExit('Vídeo dinâmico não foi gerado corretamente.')
+          print(f'OK: vídeo dinâmico gerado com {out.stat().st_size} bytes')
+          PY
