@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VIRALINK — Desempenho Facebook</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#07111f;color:#f8fafc}:root{--p:#7c3aed;--p2:#a855f7;--card:#0d1a2e;--line:#25344f;--muted:#9fb0c9;--green:#22c55e;--red:#fb7185;--blue:#60a5fa}.wrap{max-width:1280px;margin:auto;padding:24px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.brand{font-weight:900;font-style:italic;font-size:28px}.brand span{color:var(--p2)}a{color:#c4b5fd}.btn{border:0;border-radius:10px;padding:11px 14px;color:white;background:linear-gradient(90deg,#6d28d9,#9333ea);font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}.btn.secondary{background:#14233a;border:1px solid #34445f}.sub,.muted{color:var(--muted)}h1{margin:30px 0 5px}.badge{display:inline-flex;padding:7px 10px;border-radius:999px;border:1px solid #14532d;background:#0b2b22;color:#86efac;font-size:12px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:18px}.metric b{display:block;font-size:28px;margin:9px 0}.two{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.tableWrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:760px}.table th,.table td{padding:11px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}.table th{color:#c4b5fd}.score{font-weight:900;color:#86efac}.bar{height:9px;background:#18263b;border-radius:999px;overflow:hidden}.bar span{height:100%;display:block;background:linear-gradient(90deg,#7c3aed,#22c55e)}.state{padding:14px;border-left:4px solid #a855f7;background:#15132b;border-radius:9px;margin:16px 0}.state.error{border-color:#ef4444;background:#2a1118}.hero{background:linear-gradient(135deg,#25105a,#0c3064)}.hero strong{font-size:21px}.tiny{font-size:12px}.status-ok{color:#86efac}.status-partial{color:#fde68a}.status-error{color:#fca5a5}@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}}@media(max-width:580px){.grid{grid-template-columns:1fr}.wrap{padding:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">▶ VIRA<span>LINK</span></div>
+    <div>
+      <a class="btn secondary" href="./index.html">← VIRALINK</a>
+      <button class="btn" onclick="loadMetrics()">↻ Atualizar</button>
+    </div>
+  </div>
+
+  <h1>📘 Inteligência do Facebook</h1>
+  <div class="sub">O robô mede os Reels publicados, calcula uma pontuação e mostra quais produtos estão dando mais resultado.</div>
+  <div style="margin-top:12px"><span class="badge">⚡ Sincronização automática a cada 3 horas</span></div>
+  <div id="state" class="state">Verificando sua sessão e carregando os resultados...</div>
+
+  <div class="grid">
+    <div class="card metric">Reels analisados<b id="mReels">—</b><span class="muted">Publicados pelo robô</span></div>
+    <div class="card metric">Visualizações<b id="mViews">—</b><span class="muted">Total registrado</span></div>
+    <div class="card metric">Interações<b id="mInteractions">—</b><span class="muted">Reações + comentários + compartilhamentos</span></div>
+    <div class="card metric">Engajamento médio<b id="mRate">—</b><span class="muted">Interações ÷ visualizações</span></div>
+  </div>
+
+  <div class="two">
+    <div class="card hero">
+      <div class="muted">🏆 PRODUTO CAMPEÃO</div>
+      <h2 id="winnerName">Aguardando dados</h2>
+      <strong id="winnerScore">— pontos</strong>
+      <p id="winnerStats" class="muted">O ranking aparecerá após a primeira sincronização.</p>
+      <div class="bar"><span id="winnerBar" style="width:0%"></span></div>
+    </div>
+    <div class="card">
+      <div class="muted">🤖 DECISÃO DO VIRALINK</div>
+      <h2 id="decisionTitle">Coletando sinais</h2>
+      <p id="decisionText" class="muted">Com mais resultados, o VIRALINK consegue identificar os produtos que merecem prioridade.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin-top:0">🏆 Ranking por produto</h2>
+    <div class="muted">Pontuação combina visualizações e interações. Compartilhamentos e comentários têm peso maior.</div>
+    <div class="tableWrap"><table class="table">
+      <thead><tr><th>#</th><th>Produto</th><th>Reels</th><th>Views</th><th>Reações</th><th>Comentários</th><th>Compart.</th><th>Pontos</th></tr></thead>
+      <tbody id="productRows"><tr><td colspan="8" class="muted">Carregando...</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin-top:0">🎬 Reels recentes</h2>
+    <div class="tableWrap"><table class="table">
+      <thead><tr><th>Produto</th><th>Views</th><th>Interações</th><th>Engaj.</th><th>Pontos</th><th>Sync</th><th></th></tr></thead>
+      <tbody id="reelRows"><tr><td colspan="7" class="muted">Carregando...</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <p class="muted tiny" style="text-align:center;margin:24px 0">VIRALINK V5 • painel de desempenho do Facebook</p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL='https://pfbzdktlfdotsgfarhel.supabase.co';
+const SUPABASE_KEY='sb_publishable_nXkBQxBy18WoOH21matfzg_CQdDCvLi';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const n=v=>Number(v||0);
+const fmt=v=>n(v).toLocaleString('pt-BR');
+const pct=v=>n(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+
+function setState(text,error=false){$('state').textContent=text;$('state').className='state'+(error?' error':'');}
+function aggregate(rows){
+  const map=new Map();
+  rows.forEach(r=>{
+    const key=String(r.product_id||r.product_name||'sem-produto');
+    const item=map.get(key)||{name:r.product_name||'Produto',reels:0,views:0,reactions:0,comments:0,shares:0,score:0};
+    item.reels++;item.views+=n(r.views);item.reactions+=n(r.reactions);item.comments+=n(r.comments);item.shares+=n(r.shares);item.score+=n(r.score);map.set(key,item);
+  });
+  return [...map.values()].sort((a,b)=>b.score-a.score);
+}
+
+async function loadMetrics(){
+  setState('Atualizando resultados...');
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){
+    setState('🔒 Entre na sua conta no VIRALINK principal e depois abra este painel novamente.',true);
+    $('productRows').innerHTML='<tr><td colspan="8" class="muted">Login necessário para visualizar os resultados.</td></tr>';
+    $('reelRows').innerHTML='<tr><td colspan="7" class="muted">Login necessário.</td></tr>';
+    return;
+  }
+  const {data,error}=await sb.from('facebook_reel_performance').select('*').order('score',{ascending:false}).limit(100);
+  if(error){setState('Não foi possível carregar as métricas: '+error.message,true);return;}
+  const rows=data||[];
+  const views=rows.reduce((s,r)=>s+n(r.views),0);
+  const interactions=rows.reduce((s,r)=>s+n(r.engagement),0);
+  const rate=views?interactions/views*100:0;
+  $('mReels').textContent=fmt(rows.length);$('mViews').textContent=fmt(views);$('mInteractions').textContent=fmt(interactions);$('mRate').textContent=pct(rate);
+
+  const products=aggregate(rows);
+  const maxScore=products[0]?.score||1;
+  $('productRows').innerHTML=products.length?products.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${fmt(p.reels)}</td><td>${fmt(p.views)}</td><td>${fmt(p.reactions)}</td><td>${fmt(p.comments)}</td><td>${fmt(p.shares)}</td><td class="score">${Math.round(p.score).toLocaleString('pt-BR')}</td></tr>`).join(''):'<tr><td colspan="8" class="muted">Aguardando a primeira sincronização.</td></tr>';
+
+  if(products.length){
+    const w=products[0];$('winnerName').textContent=w.name;$('winnerScore').textContent=Math.round(w.score).toLocaleString('pt-BR')+' pontos';$('winnerStats').textContent=`${fmt(w.views)} views • ${fmt(w.reactions)} reações • ${fmt(w.comments)} comentários • ${fmt(w.shares)} compartilhamentos`;$('winnerBar').style.width=Math.min(100,w.score/maxScore*100)+'%';
+    $('decisionTitle').textContent='Priorizar o campeão';$('decisionText').textContent=`Hoje, “${w.name}” é o produto com melhor pontuação no Facebook. Ele é o principal candidato para receber novas variações de conteúdo, sem repetir em excesso.`;
+  }
+
+  const statusLabel={ok:'✅ Completo',partial:'⚠️ Parcial',error:'❌ Erro',pending:'⏳ Pendente'};
+  const statusClass={ok:'status-ok',partial:'status-partial',error:'status-error',pending:'muted'};
+  $('reelRows').innerHTML=rows.length?rows.slice().sort((a,b)=>new Date(b.published_at||0)-new Date(a.published_at||0)).slice(0,30).map(r=>`<tr><td>${esc(r.product_name||'Produto')}</td><td>${fmt(r.views)}</td><td>${fmt(r.engagement)}</td><td>${pct(r.engagement_rate)}</td><td class="score">${Math.round(n(r.score)).toLocaleString('pt-BR')}</td><td class="${statusClass[r.sync_status]||'muted'}">${statusLabel[r.sync_status]||esc(r.sync_status)}</td><td>${r.permalink_url?`<a href="${esc(r.permalink_url)}" target="_blank" rel="noopener">Abrir</a>`:''}</td></tr>`).join(''):'<tr><td colspan="7" class="muted">Nenhum Reel sincronizado ainda.</td></tr>';
+  const partial=rows.filter(r=>r.sync_status!=='ok').length;
+  setState(rows.length?`✅ ${rows.length} Reel(s) no painel. ${partial?partial+' com leitura parcial da Meta.':'Todas as métricas disponíveis foram sincronizadas.'}`:'⏳ O painel está pronto. Aguardando a primeira coleta automática.');
+}
+
+sb.auth.onAuthStateChange(()=>loadMetrics());
+loadMetrics();
+</script>
+</body>
+</html>
