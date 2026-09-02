@@ -251,6 +251,18 @@ body.ceoMode .productAdminBtns{display:flex}
 <section id="results" class="page hide">
   <h1>📊 Centro de Resultados</h1>
   <div class="sub">Acompanhe a preparação dos produtos e os dados realmente registrados pelo VIRALINK.</div>
+  <div class="card" style="margin-top:16px;background:linear-gradient(135deg,#151039,#0b2447)">
+    <div class="challengeTop" style="align-items:center">
+      <div>
+        <h2 style="margin:0">📘 Facebook — desempenho automático</h2>
+        <div class="muted">Visualizações, interações, ranking de produtos e decisão automática do VIRALINK.</div>
+      </div>
+      <button class="btn" type="button" onclick="document.getElementById('facebookResultsEmbed').classList.toggle('hide')">Mostrar / ocultar</button>
+    </div>
+    <div id="facebookResultsEmbed" style="margin-top:14px">
+      <iframe src="./facebook-performance.html" title="Desempenho do Facebook no VIRALINK" style="width:100%;height:920px;border:1px solid #25344f;border-radius:14px;background:#07111f"></iframe>
+    </div>
+  </div>
   <div class="resultsGrid">
     <div class="card metric">Produtos ativos<b id="resultsProducts">0</b><span class="muted">Disponíveis no banco</span></div>
     <div class="card metric">Aptos para publicar<b id="resultsReady">0</b><span class="muted">Sem bloqueios de dados</span></div>
