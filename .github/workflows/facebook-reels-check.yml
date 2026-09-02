@@ -1,0 +1,23 @@
+name: Verificar Facebook Reels
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "automation/facebook_reels.py"
+      - "automation/facebook_reels_dynamic.py"
+      - "automation/facebook_reels_entry.py"
+      - ".github/workflows/facebook-reels-check.yml"
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verificar sintaxe
+        run: python -m py_compile automation/facebook_reels.py automation/facebook_reels_dynamic.py automation/facebook_reels_entry.py
