@@ -1,6 +1,10 @@
 name: Publicar Facebook Reels
 
 on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/facebook-reels.yml"
   schedule:
     # 09h, 12h, 15h, 18h e 21h em Belém (UTC-3)
     - cron: "0 0,12,15,18,21 * * *"
@@ -55,4 +59,4 @@ jobs:
           FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
           META_GRAPH_VERSION: v26.0
           FACEBOOK_REELS_BUCKET: social-videos
-        run: python automation/facebook_reels.py
+        run: python automation/facebook_reels_entry.py
