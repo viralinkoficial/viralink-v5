@@ -69,7 +69,7 @@ def resolve_page_token() -> str:
 # Substitui apenas dentro do processo do GitHub Actions; o token nunca é impresso.
 os.environ["FACEBOOK_PAGE_ACCESS_TOKEN"] = resolve_page_token()
 
-from facebook_reels import main  # noqa: E402
+from facebook_reels_dynamic import main  # noqa: E402
 
 
 if __name__ == "__main__":
