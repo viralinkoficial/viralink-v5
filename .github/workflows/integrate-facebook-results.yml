@@ -1,0 +1,61 @@
+name: Integrar Facebook em Resultados
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/integrate-facebook-results.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Integrar painel no VIRALINK
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          marker = '''<section id="results" class="page hide">
+            <h1>📊 Centro de Resultados</h1>
+            <div class="sub">Acompanhe a preparação dos produtos e os dados realmente registrados pelo VIRALINK.</div>'''
+          block = '''<section id="results" class="page hide">
+            <h1>📊 Centro de Resultados</h1>
+            <div class="sub">Acompanhe a preparação dos produtos e os dados realmente registrados pelo VIRALINK.</div>
+            <div class="card" style="margin-top:16px;background:linear-gradient(135deg,#151039,#0b2447)">
+              <div class="challengeTop" style="align-items:center">
+                <div>
+                  <h2 style="margin:0">📘 Facebook — desempenho automático</h2>
+                  <div class="muted">Visualizações, interações, ranking de produtos e decisão automática do VIRALINK.</div>
+                </div>
+                <button class="btn" type="button" onclick="document.getElementById('facebookResultsEmbed').classList.toggle('hide')">Mostrar / ocultar</button>
+              </div>
+              <div id="facebookResultsEmbed" style="margin-top:14px">
+                <iframe src="./facebook-performance.html" title="Desempenho do Facebook no VIRALINK" style="width:100%;height:920px;border:1px solid #25344f;border-radius:14px;background:#07111f"></iframe>
+              </div>
+            </div>'''
+
+          if 'id="facebookResultsEmbed"' in text:
+              print('Painel do Facebook já está integrado.')
+          elif marker not in text:
+              raise SystemExit('Marcador da seção Resultados não encontrado; nada foi alterado.')
+          else:
+              path.write_text(text.replace(marker, block, 1), encoding='utf-8')
+              print('Painel do Facebook integrado em Resultados.')
+          PY
+      - name: Publicar alteração
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "Nenhuma alteração necessária."
+            exit 0
+          fi
+          git config user.name "viralinkoficial"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Integra painel Facebook em Resultados"
+          git push
