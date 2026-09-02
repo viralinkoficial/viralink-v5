@@ -2,12 +2,12 @@
 """Modelo dinâmico de Reels do Facebook para o VIRALINK.
 
 Mantém a publicação segura do robô original, mas troca o vídeo estático por
-quatro cenas verticais com cortes rápidos, zoom suave, preço, benefício e CTA.
+quatro cenas verticais com cortes rápidos, zoom suave, preço, benefício, CTA
+e uma trilha instrumental gerada localmente conforme a categoria do produto.
 """
 
 import io
 import re
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -65,6 +65,36 @@ def benefit_text(product):
     if len(first) > 145:
         first = first[:142].rsplit(" ", 1)[0] + "…"
     return first
+
+
+def music_style(product):
+    """Escolhe uma trilha instrumental sem depender de áudio externo."""
+    haystack = " ".join(
+        clean(product.get(key)).lower()
+        for key in ("name", "category", "description", "platform")
+    )
+
+    electronics = (
+        "fone", "bluetooth", "smartwatch", "relógio", "celular", "smartphone",
+        "carregador", "usb", "led", "eletr", "tecnologia", "gamer", "headset",
+        "caixa de som", "projeção", "projetor", "cabo", "power bank",
+    )
+    beauty = (
+        "beleza", "skincare", "sérum", "serum", "pele", "cabelo", "cachos",
+        "shampoo", "maquiagem", "cosmético", "cosmetico", "unha", "creme",
+    )
+    promo = (
+        "promoção", "promocao", "oferta", "desconto", "liquidação", "liquidacao",
+        "imperdível", "imperdivel", "kit", "leve 2", "combo",
+    )
+
+    if any(term in haystack for term in electronics):
+        return "electronic_fast"
+    if any(term in haystack for term in beauty):
+        return "beauty_soft"
+    if any(term in haystack for term in promo):
+        return "sales_energy"
+    return "upbeat"
 
 
 def download_image(product):
@@ -177,6 +207,10 @@ def dynamic_poster(product, out):
         path = out if idx == 1 else out.parent / f"scene_{idx}.jpg"
         image.save(path, quality=94, optimize=True)
 
+    # Guarda apenas o nome do perfil musical no diretório temporário.
+    # Nenhum áudio externo ou protegido por direitos autorais é baixado.
+    (out.parent / "music_style.txt").write_text(music_style(product), encoding="utf-8")
+
 
 def make_clip(scene_path, clip_path, duration, zoom_speed):
     vf = (
@@ -195,6 +229,51 @@ def make_clip(scene_path, clip_path, duration, zoom_speed):
     )
 
 
+def music_config(style, total):
+    """Retorna frequências e mix para uma trilha instrumental sintética."""
+    configs = {
+        "electronic_fast": {
+            "freqs": (220.00, 329.63, 440.00),
+            "filters": (
+                "[1:a]volume=0.038,tremolo=f=6.8:d=0.78[a0];"
+                "[2:a]volume=0.025,tremolo=f=3.4:d=0.62[a1];"
+                "[3:a]volume=0.014,tremolo=f=6.8:d=0.50[a2];"
+            ),
+        },
+        "beauty_soft": {
+            "freqs": (174.61, 220.00, 261.63),
+            "filters": (
+                "[1:a]volume=0.024,tremolo=f=1.8:d=0.25[a0];"
+                "[2:a]volume=0.017,tremolo=f=1.2:d=0.20[a1];"
+                "[3:a]volume=0.010,tremolo=f=1.8:d=0.18[a2];"
+            ),
+        },
+        "sales_energy": {
+            "freqs": (196.00, 293.66, 392.00),
+            "filters": (
+                "[1:a]volume=0.036,tremolo=f=7.4:d=0.82[a0];"
+                "[2:a]volume=0.022,tremolo=f=3.7:d=0.64[a1];"
+                "[3:a]volume=0.013,tremolo=f=7.4:d=0.52[a2];"
+            ),
+        },
+        "upbeat": {
+            "freqs": (196.00, 246.94, 329.63),
+            "filters": (
+                "[1:a]volume=0.030,tremolo=f=4.4:d=0.55[a0];"
+                "[2:a]volume=0.020,tremolo=f=2.2:d=0.42[a1];"
+                "[3:a]volume=0.012,tremolo=f=4.4:d=0.36[a2];"
+            ),
+        },
+    }
+    cfg = configs.get(style, configs["upbeat"])
+    mix = (
+        cfg["filters"]
+        + "[a0][a1][a2]amix=inputs=3:duration=longest:normalize=0,"
+        + f"afade=t=in:d=0.30,afade=t=out:st={total - 1.35:.2f}:d=1.35[a]"
+    )
+    return cfg["freqs"], mix
+
+
 def dynamic_make_video(poster_path, out):
     poster_path = Path(poster_path)
     out = Path(out)
@@ -211,17 +290,16 @@ def dynamic_make_video(poster_path, out):
     concat_file = poster_path.parent / "clips.txt"
     concat_file.write_text("".join(f"file '{clip.as_posix()}'\n" for clip in clips), encoding="utf-8")
     total = sum(durations)
-    audio = (
-        "[1:a]volume=0.030[a0];[2:a]volume=0.020[a1];[3:a]volume=0.014[a2];"
-        "[a0][a1][a2]amix=inputs=3:duration=longest,"
-        f"afade=t=in:d=0.35,afade=t=out:st={total - 1.4:.2f}:d=1.4[a]"
-    )
+    style_file = poster_path.parent / "music_style.txt"
+    style = style_file.read_text(encoding="utf-8").strip() if style_file.exists() else "upbeat"
+    freqs, audio = music_config(style, total)
+
     subprocess.run(
         [
             "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(concat_file),
-            "-f", "lavfi", "-i", f"sine=frequency=196:duration={total:.2f}",
-            "-f", "lavfi", "-i", f"sine=frequency=246.94:duration={total:.2f}",
-            "-f", "lavfi", "-i", f"sine=frequency=293.66:duration={total:.2f}",
+            "-f", "lavfi", "-i", f"sine=frequency={freqs[0]}:duration={total:.2f}",
+            "-f", "lavfi", "-i", f"sine=frequency={freqs[1]}:duration={total:.2f}",
+            "-f", "lavfi", "-i", f"sine=frequency={freqs[2]}:duration={total:.2f}",
             "-filter_complex", audio,
             "-map", "0:v:0", "-map", "[a]", "-t", f"{total:.2f}",
             "-c:v", "libx264", "-preset", "medium", "-crf", "22",
@@ -230,10 +308,11 @@ def dynamic_make_video(poster_path, out):
         ],
         check=True,
     )
+    print(f"Trilha automática aplicada: {style}")
 
 
-# Troca apenas a camada visual; fila, upload, token e publicação continuam
-# usando o robô já testado e aprovado.
+# Troca apenas a camada visual e musical; fila, upload, token e publicação
+# continuam usando o robô já testado e aprovado.
 base.poster = dynamic_poster
 base.make_video = dynamic_make_video
 main = base.main
