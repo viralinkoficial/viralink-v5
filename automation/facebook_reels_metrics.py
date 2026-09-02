@@ -80,10 +80,7 @@ def sb_get(path: str):
 def sb_upsert(row: dict):
     response = requests.post(
         f"{SB}/rest/v1/facebook_reel_performance?on_conflict=video_id",
-        headers={
-            **SB_HEADERS,
-            "Prefer": "resolution=merge-duplicates,return=minimal",
-        },
+        headers={**SB_HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"},
         data=json.dumps(row, ensure_ascii=False),
         timeout=45,
     )
@@ -141,6 +138,19 @@ def numeric_share_value(value):
     return None
 
 
+def normalize_permalink(value, video_id: str):
+    """Garante link absoluto do Facebook; a Meta às vezes retorna /reel/<id>."""
+    fallback = f"https://www.facebook.com/reel/{video_id}"
+    text = str(value or "").strip()
+    if not text:
+        return fallback
+    if text.startswith("/"):
+        return "https://www.facebook.com" + text
+    if text.startswith("https://") or text.startswith("http://"):
+        return text
+    return fallback
+
+
 def collect(video_id: str, token: str):
     errors = []
     raw = {}
@@ -177,7 +187,7 @@ def collect(video_id: str, token: str):
     if shares is not None and shares_metric:
         raw["shares_metric"] = shares_metric
 
-    permalink = optional_field(video_id, "permalink_url", token)
+    permalink = normalize_permalink(optional_field(video_id, "permalink_url", token), video_id)
     created_time = optional_field(video_id, "created_time", token)
 
     values = {
@@ -187,13 +197,7 @@ def collect(video_id: str, token: str):
         "shares": 0 if shares is None else int(shares),
     }
     available = sum(v is not None for v in (views, reactions, comments, shares))
-    if available == 4:
-        status = "ok"
-    elif available > 0:
-        status = "partial"
-    else:
-        status = "error"
-
+    status = "ok" if available == 4 else "partial" if available > 0 else "error"
     raw.update({"available_metrics": available})
     return values, permalink, created_time, status, errors, raw
 
@@ -241,7 +245,7 @@ def main():
                 "campaign_queue_id": job.get("id"),
                 "product_id": None if job.get("product_id") is None else str(job.get("product_id")),
                 "product_name": job.get("product_name") or "Produto",
-                "permalink_url": permalink or f"https://www.facebook.com/reel/{video_id}",
+                "permalink_url": normalize_permalink(permalink, video_id),
                 "published_at": created_time or job.get("scheduled_for") or job.get("created_at"),
                 **metrics,
                 "engagement": engagement,
