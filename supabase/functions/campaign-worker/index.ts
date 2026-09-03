@@ -136,7 +136,7 @@ async function bloggerAccessToken() {
   });
   const data = await response.json();
   if (!response.ok || !data.access_token) {
-    throw new Error("Blogger OAuth: " + (data.error_description || data.error || response.status));
+    throw new Error("Blogger OAuth: " + [data.error, data.error_description].filter(Boolean).join(" — ") || "HTTP " + response.status);
   }
   return String(data.access_token);
 }
