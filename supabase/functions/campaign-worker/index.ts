@@ -151,7 +151,7 @@ function escapeHtml(value: unknown) {
 }
 
 async function publishBlogger(item: QueueItem) {
-  const blogId = required("BLOGGER_BLOG_ID");
+  const blogId = Deno.env.get("BLOGGER_BLOG_ID") || "2124501999986492802";
   const token = await bloggerAccessToken();
   const name = String(item.payload.name || item.product_name || "Achadinho VIRALINK").trim();
   const description = String(item.payload.description || "").trim();
