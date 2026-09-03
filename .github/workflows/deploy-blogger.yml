@@ -1,0 +1,36 @@
+name: Implantar automação do Blogger
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/campaign-queue/**"
+      - "supabase/functions/campaign-worker/**"
+      - "supabase/config.toml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-blogger
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Implantar fila e publicador
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy campaign-queue --project-ref pfbzdktlfdotsgfarhel
+          supabase functions deploy campaign-worker --project-ref pfbzdktlfdotsgfarhel --no-verify-jwt
