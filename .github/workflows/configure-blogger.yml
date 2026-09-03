@@ -22,9 +22,9 @@ jobs:
       - name: Salvar credenciais Google no Supabase
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          BLOGGER_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
-          BLOGGER_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          BLOGGER_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+          BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
         run: |
           supabase secrets set \
             BLOGGER_BLOG_ID=2124501999986492802 \
