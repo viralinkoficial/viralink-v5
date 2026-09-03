@@ -35,3 +35,4 @@ jobs:
 # Execução solicitada após salvar BLOGGER_REFRESH_TOKEN
 # Reexecução após atualizar BLOGGER_CLIENT_SECRET
 # Reexecução após corrigir BLOGGER_REFRESH_TOKEN
+# Reexecução final com refresh token válido
