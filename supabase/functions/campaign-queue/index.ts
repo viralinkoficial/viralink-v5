@@ -102,7 +102,8 @@ Deno.serve(async (req) => {
     let cursor = 0;
     for (const channel of channels) {
       const hours = CHANNELS[channel];
-      const slots = nextSlots(hours, hours.length);
+      // Blogger recebe 10 produtos em dois dias (5 horários por dia).
+      const slots = nextSlots(hours, channel === "blogger" ? 10 : hours.length);
       const channelUsed = usedByChannel.get(channel) || new Set<string>();
       for (const scheduledFor of slots) {
         let picked = null;
