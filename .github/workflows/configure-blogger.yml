@@ -33,3 +33,4 @@ jobs:
             BLOGGER_REFRESH_TOKEN="$BLOGGER_REFRESH_TOKEN" \
             --project-ref pfbzdktlfdotsgfarhel
 # Execução solicitada após salvar BLOGGER_REFRESH_TOKEN
+# Reexecução após atualizar BLOGGER_CLIENT_SECRET
