@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#111111" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <title>Modo Poder</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">ASSISTENTE PESSOAL</div>
+      <h1>Modo Poder ⚡</h1>
+    </div>
+    <button id="installBtn" class="ghost hidden">Instalar</button>
+  </header>
+
+  <main>
+    <section id="hoje" class="page active">
+      <div class="hero card">
+        <div>
+          <span class="pill">HOJE</span>
+          <h2 id="saudacao">Seu dia começa com direção.</h2>
+          <p class="muted">Intenção → decisão → ação → resultado → ajuste.</p>
+        </div>
+        <div class="scorebox">
+          <span>Progresso</span>
+          <strong id="dailyScore">0%</strong>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div class="card">
+          <div class="section-head">
+            <h3>3 prioridades</h3>
+            <button class="mini" id="resetPriorities">Limpar</button>
+          </div>
+          <div class="priority-list">
+            <label><input type="checkbox" class="priority-check" data-key="p1done"><input class="line-input" id="p1" placeholder="Prioridade 1"></label>
+            <label><input type="checkbox" class="priority-check" data-key="p2done"><input class="line-input" id="p2" placeholder="Prioridade 2"></label>
+            <label><input type="checkbox" class="priority-check" data-key="p3done"><input class="line-input" id="p3" placeholder="Prioridade 3"></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Ação de renda</h3>
+          <input class="line-input big" id="incomeAction" placeholder="Ex.: enviar 5 propostas personalizadas">
+          <button id="incomeDone" class="primary full">Marcar como concluída</button>
+          <p id="incomeStatus" class="small muted">Ainda não concluída.</p>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div class="card">
+          <h3>Risco de distração</h3>
+          <input class="line-input big" id="distraction" placeholder="Ex.: abrir várias tarefas ao mesmo tempo">
+          <h4>Regra de disciplina</h4>
+          <input class="line-input" id="disciplineRule" value="Terminar uma tarefa importante antes de abrir outra.">
+        </div>
+
+        <div class="card power-card">
+          <span class="pill">MODO PODER</span>
+          <h3 id="powerMessage">Comece antes de sentir vontade.</h3>
+          <p id="powerIntent">Visualize o resultado, escolha uma ação concreta e execute.</p>
+          <button class="secondary" id="newPower">Nova mensagem</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="habitos" class="page">
+      <div class="card">
+        <div class="section-head">
+          <div>
+            <span class="pill">CONSTÂNCIA</span>
+            <h2>Hábitos de hoje</h2>
+          </div>
+          <strong id="habitScore">0/6</strong>
+        </div>
+        <div id="habitsList" class="checklist"></div>
+      </div>
+    </section>
+
+    <section id="metas" class="page">
+      <div class="card">
+        <span class="pill">DIREÇÃO</span>
+        <h2>Metas</h2>
+        <div class="goal-form">
+          <input id="goalTitle" placeholder="Nova meta">
+          <select id="goalType">
+            <option value="diaria">Diária</option>
+            <option value="semanal">Semanal</option>
+            <option value="mensal">Mensal</option>
+          </select>
+          <button id="addGoal" class="primary">Adicionar</button>
+        </div>
+        <div id="goalList" class="goal-list"></div>
+      </div>
+    </section>
+
+    <section id="desempenho" class="page">
+      <div class="grid three">
+        <div class="card stat"><span>Prioridades</span><strong id="statPriorities">0/3</strong></div>
+        <div class="card stat"><span>Hábitos</span><strong id="statHabits">0/6</strong></div>
+        <div class="card stat"><span>Metas concluídas</span><strong id="statGoals">0</strong></div>
+      </div>
+      <div class="card">
+        <h2>Revisão do dia</h2>
+        <textarea id="wins" placeholder="O que deu certo hoje?"></textarea>
+        <textarea id="improve" placeholder="O que precisa melhorar amanhã?"></textarea>
+        <button id="saveReview" class="primary">Salvar revisão</button>
+        <p id="reviewSaved" class="small muted"></p>
+      </div>
+    </section>
+
+    <section id="mentalidade" class="page">
+      <div class="card">
+        <span class="pill">MENTALIDADE</span>
+        <h2>Poder pessoal</h2>
+        <div class="lesson">
+          <h3>Disciplina</h3>
+          <p>Disciplina é cumprir o essencial mesmo quando a motivação oscila. Use metas pequenas, horários realistas e revisões frequentes.</p>
+        </div>
+        <div class="lesson">
+          <h3>Autoconfiança e ego saudável</h3>
+          <p>Confiança forte não precisa diminuir ninguém. Foque em postura, limites, respeito próprio, responsabilidade e competência.</p>
+        </div>
+        <div class="lesson">
+          <h3>Lei da Atração, de forma prática</h3>
+          <p>Use visualização, gratidão e intenção como ferramentas de foco. Elas não garantem resultados: o passo decisivo é transformar intenção em ações verificáveis.</p>
+        </div>
+        <div class="lesson">
+          <h3>Poder do que você pede</h3>
+          <p>Pedidos vagos geram planos vagos. Prefira: “Quero alcançar X até Y por meio destas ações: A, B e C”.</p>
+        </div>
+        <div class="lesson">
+          <h3>Postura e modos</h3>
+          <p>Ouça sem interromper, fale com clareza, cumpra combinados, evite prometer o que não consegue entregar e mantenha firmeza sem grosseria.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="config" class="page">
+      <div class="card">
+        <h2>Configurações</h2>
+        <label class="field">Seu nome
+          <input id="userName" placeholder="Seu nome">
+        </label>
+        <label class="field">Meta financeira do mês (R$)
+          <input id="monthlyMoney" type="number" min="0" placeholder="0">
+        </label>
+        <label class="field">Horário do Modo Poder
+          <input id="powerTime" type="time" value="05:00">
+        </label>
+        <button id="saveConfig" class="primary">Salvar configurações</button>
+        <button id="notifyBtn" class="secondary">Ativar notificações</button>
+        <p class="small muted">Observação: notificações dependem da permissão do navegador. Em alguns celulares, o app precisa estar aberto recentemente.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button data-page="hoje" class="nav-btn active">🏠<span>Hoje</span></button>
+    <button data-page="habitos" class="nav-btn">🔥<span>Hábitos</span></button>
+    <button data-page="metas" class="nav-btn">🎯<span>Metas</span></button>
+    <button data-page="desempenho" class="nav-btn">📊<span>Desempenho</span></button>
+    <button data-page="mentalidade" class="nav-btn">⚡<span>Poder</span></button>
+    <button data-page="config" class="nav-btn">⚙️<span>Ajustes</span></button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
