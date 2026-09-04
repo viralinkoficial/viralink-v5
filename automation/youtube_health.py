@@ -44,7 +44,7 @@ def expected_slots(now_local: datetime) -> int:
 def main():
     now_local = datetime.now(timezone.utc).astimezone(BELEM)
     day_start_local = datetime.combine(now_local.date(), time.min, tzinfo=BELEM)
-    day_start_utc = day_start_local.astimezone(timezone.utc).isoformat()
+    day_start_utc = day_start_local.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
     rows = rest_get(
         "campaign_queue?channel=eq.youtube"
