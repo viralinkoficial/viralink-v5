@@ -1,0 +1,39 @@
+name: Atualizar desempenho YouTube Shorts
+
+on:
+  schedule:
+    # Atualiza as métricas 35 minutos após cada hora.
+    - cron: "35 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "automation/youtube_metrics.py"
+      - ".github/workflows/youtube-metrics.yml"
+
+concurrency:
+  group: viralink-youtube-metrics
+  cancel-in-progress: true
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: automation/requirements.txt
+      - run: pip install -r automation/requirements.txt
+      - name: Sincronizar métricas dos Shorts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: python automation/youtube_metrics.py
