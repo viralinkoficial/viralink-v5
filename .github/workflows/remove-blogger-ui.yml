@@ -1,0 +1,108 @@
+name: Remover Blogger da interface
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/remove-blogger-ui.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remover referências do Blogger
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          before = s
+
+          # Botões/opções visuais.
+          exact = [
+            '        <button type="button" class="btn secondary aiPlatformBtn" data-platform="blogger" onclick="setAIPlatform(\'blogger\')">✍️ Blogger</button>\n',
+            '      <label class="robotChannel"><input type="checkbox" value="blogger"> ✍️ Blogger</label>\n',
+            '        <label class="pubChannel"><input type="checkbox" value="blogger" checked> ✍️ Blogger</label>\n',
+          ]
+          for item in exact:
+            s = s.replace(item, '')
+
+          # Cartão de integração.
+          s = re.sub(r'\s*<div class="card">\s*<h3>✍️ Blogger</h3>\s*<p id="bloggerStatus"[^>]*>.*?</p>\s*<button[^>]*id="btnConnectBlogger"[^>]*>.*?</button>\s*</div>\s*', '\n', s, flags=re.S)
+
+          # IA Creator: rótulo e gerador específico.
+          s = s.replace(", blogger: 'Blogger'", '')
+          s = re.sub(r"\n\s*if\(platform === 'blogger'\)\{.*?\n\s*\}\n\s*if\(platform === 'tiktok'\)", "\n  if(platform === 'tiktok')", s, flags=re.S)
+          s = re.sub(r'\nfunction buildBloggerPostHtml\(p\)\{.*?\n\}\n\nfunction generateAI\(', '\nfunction generateAI(', s, flags=re.S)
+
+          # Centro de resultados.
+          s = re.sub(r"\n\s*const blogger=!!localStorage\.getItem\('blogger_access_token'\);", '', s)
+          s = re.sub(r"\n\s*'\\<p\\>'\+\(blogger\?.*?Blogger: .*?\\</p\\>'\+", '\n', s)
+          s = re.sub(r"\n\s*'<p>'\+\(blogger\?.*?Blogger: .*?</p>'\+", '\n', s)
+
+          # Rótulos internos.
+          s = s.replace(",blogger:'Blogger'", '')
+          s = re.sub(r"\n\s*blogger: 'Blogger',", '', s)
+
+          # Prévia de campanha sem ramificações do Blogger.
+          s = s.replace("ch === 'blogger' || ch === 'youtube' || ch === 'tiktok' || ch === 'facebook'", "ch === 'youtube' || ch === 'tiktok' || ch === 'facebook'")
+          s = s.replace("${ch === 'blogger' ? 'Publicação direta' : ch === 'instagram' ?", "${ch === 'instagram' ?")
+          s = s.replace("` : ch === 'blogger' ? '' : ch === 'instagram' ? `", "` : ch === 'instagram' ? `")
+
+          # Publicação selecionada: Blogger deixa de ser exceção e todo o bloco direto é removido.
+          s = s.replace("const assisted = selected.filter(ch => !['blogger','youtube','instagram'].includes(ch));", "const assisted = selected.filter(ch => !['youtube','instagram'].includes(ch));")
+          s = re.sub(
+            r"\n\s*if\(!selected\.includes\('blogger'\)\)\{\s*if\(button\).*?return;\s*\}\s*const token = localStorage\.getItem\('blogger_access_token'\);.*?\n\s*finally \{\s*if\(button\).*?\n\s*\}\n\}",
+            "\n  if(button){ button.disabled = false; button.textContent = '🚀 Publicar selecionados'; }\n  if(selected.includes('instagram')) alert('📸 Publicado no Instagram com sucesso!');\n}",
+            s,
+            flags=re.S,
+          )
+
+          # OAuth: manter o mesmo cliente Google para YouTube, mas sem escopo/função do Blogger.
+          s = s.replace('const BLOGGER_CLIENT_ID = "8081863130-q3qll2egcjbusnaq237uj64u0odpsufh.apps.googleusercontent.com";', 'const GOOGLE_CLIENT_ID = "8081863130-q3qll2egcjbusnaq237uj64u0odpsufh.apps.googleusercontent.com";')
+          s = re.sub(r'\nconst BLOGGER_SCOPE = .*?;', '', s)
+          s = re.sub(r'\nlet bloggerTokenClient;', '', s)
+          s = re.sub(r'\nfunction conectarBlogger\(\) \{.*?\n\}\n\nfunction conectarYoutube\(\)', '\nfunction conectarYoutube()', s, flags=re.S)
+          s = s.replace('client_id: BLOGGER_CLIENT_ID,', 'client_id: GOOGLE_CLIENT_ID,')
+          s = re.sub(r'\ndocument\.getElementById\("btnConnectBlogger"\)\?\.addEventListener\("click", conectarBlogger\);', '', s)
+
+          # Limpa token antigo do navegador caso exista.
+          marker = "const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);"
+          s = s.replace(marker, marker + "\nlocalStorage.removeItem('blogger_access_token');")
+
+          leftovers = [(i+1, line) for i, line in enumerate(s.splitlines()) if 'blogger' in line.lower()]
+          if leftovers:
+            print('Referências restantes:')
+            for line_no, line in leftovers[:50]:
+              print(line_no, line)
+            raise SystemExit('Ainda existem referências ao Blogger; nenhuma alteração será gravada.')
+
+          if s == before:
+            raise SystemExit('Nenhuma alteração foi aplicada.')
+
+          p.write_text(s, encoding='utf-8')
+          print('Blogger removido da interface. Tamanho:', len(before), '->', len(s))
+          PY
+
+      - name: Confirmar ausência do Blogger
+        run: |
+          if grep -in blogger index.html; then
+            echo "Ainda há referência ao Blogger"
+            exit 1
+          fi
+
+      - name: Salvar alteração
+        run: |
+          git config user.name "viralinkoficial"
+          git config user.email "vivianeferreiracaroline@gmail.com"
+          git add index.html
+          git commit -m "Remover Blogger da interface do VIRALINK"
+          git push
