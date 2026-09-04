@@ -231,7 +231,6 @@ body.ceoMode .productAdminBtns{display:flex}
       <div class="row" id="aiPlatformTabs">
         <button type="button" class="btn secondary aiPlatformBtn active" data-platform="whatsapp" onclick="setAIPlatform('whatsapp')">💬 WhatsApp</button>
         <button type="button" class="btn secondary aiPlatformBtn" data-platform="instagram" onclick="setAIPlatform('instagram')">📸 Instagram</button>
-        <button type="button" class="btn secondary aiPlatformBtn" data-platform="blogger" onclick="setAIPlatform('blogger')">✍️ Blogger</button>
         <button type="button" class="btn secondary aiPlatformBtn" data-platform="tiktok" onclick="setAIPlatform('tiktok')">🎬 TikTok/Shorts</button>
         <button type="button" class="btn secondary aiPlatformBtn" data-platform="pinterest" onclick="setAIPlatform('pinterest')">📌 Pinterest</button>
       </div>
@@ -306,7 +305,6 @@ body.ceoMode .productAdminBtns{display:flex}
       <label class="robotChannel"><input type="checkbox" value="youtube" checked> ▶️ YouTube</label>
       <label class="robotChannel"><input type="checkbox" value="facebook"> 📘 Facebook</label>
       <label class="robotChannel"><input type="checkbox" value="pinterest"> 📌 Pinterest</label>
-      <label class="robotChannel"><input type="checkbox" value="blogger"> ✍️ Blogger</label>
       <label class="robotChannel"><input type="checkbox" value="tiktok"> 🎬 TikTok</label>
       <label class="robotChannel"><input type="checkbox" value="whatsapp"> 💬 WhatsApp</label>
     </div>
@@ -342,7 +340,6 @@ body.ceoMode .productAdminBtns{display:flex}
     <div class="field">
       <label>Canais</label>
       <div class="pubChannels">
-        <label class="pubChannel"><input type="checkbox" value="blogger" checked> ✍️ Blogger</label>
         <label class="pubChannel"><input type="checkbox" value="instagram"> 📸 Instagram</label>
         <label class="pubChannel"><input type="checkbox" value="facebook"> 📘 Facebook</label>
         <label class="pubChannel"><input type="checkbox" value="tiktok"> 🎬 TikTok</label>
@@ -379,12 +376,7 @@ body.ceoMode .productAdminBtns{display:flex}
     <div class="card"><h3>☁️ Supabase</h3><p class="statusok">Conectado</p></div>
     <div class="card"><h3>🟠 Shopee</h3><p class="muted">Links de afiliado ativos</p></div>
     <div class="card"><h3>🔐 Login CEO</h3><p class="statusok">Ativo (Supabase Auth)</p></div>
-   <div class="card">
-  <h3>✍️ Blogger</h3>
-  <p id="bloggerStatus" class="pubStatus warn">Não conectado</p>
-  <button class="btn secondary" id="btnConnectBlogger">🔗 Conectar Blogger</button>
-</div>
-    <div class="card"><h3>📸 Instagram</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
+<div class="card"><h3>📸 Instagram</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
     <div class="card"><h3>📘 Facebook</h3><p id="facebookStatus" class="pubStatus warn">Configuração pendente</p><button class="btn small secondary" onclick="checkFacebookConnection()">🔗 Verificar Página</button></div>
     <div class="card"><h3>🎬 TikTok</h3><p class="pubStatus ok">Modo assistido ativo</p><button class="btn small" onclick="showPage('publications')">Criar publicação</button></div>
     <div class="card"><h3>▶️ YouTube Shorts</h3><p id="youtubeStatus" class="pubStatus warn">Não conectado</p><button class="btn small secondary" id="btnConnectYoutube">🔗 Conectar YouTube</button></div>
@@ -573,7 +565,7 @@ function fillAI(){
 }
 
 let aiPlatform = 'whatsapp';
-const AI_PLATFORM_LABELS = { whatsapp: 'WhatsApp', instagram: 'Instagram', blogger: 'Blogger', tiktok: 'TikTok/Shorts', pinterest:'Pinterest' };
+const AI_PLATFORM_LABELS = { whatsapp: 'WhatsApp', instagram: 'Instagram', tiktok: 'TikTok/Shorts', pinterest:'Pinterest' };
 
 function setAIPlatform(platform){
   aiPlatform = platform;
@@ -617,16 +609,6 @@ ${link}
 
 ${aiHashtags(p)}`;
   }
-  if(platform === 'blogger'){
-    return `${name}: será que vale a pena?
-
-Se você está de olho em ${name.toLowerCase()}, essa oferta merece atenção. ${desc}
-
-Encontrado via ${platformName}, o produto está saindo por ${price}. Preço e disponibilidade podem mudar a qualquer momento, então vale a pena conferir agora mesmo antes que a oferta acabe.
-
-👉 Acesse a oferta completa e garanta a sua unidade:
-${link}`;
-  }
   if(platform === 'tiktok'){
     return `🎬 Roteiro — ${name}
 
@@ -653,36 +635,6 @@ ${desc}
 ${link}`;
 }
 
-
-function buildBloggerPostHtml(p){
-  const name = escapeHtml(p.name || 'Produto');
-  const desc = escapeHtml(p.description || 'Confira os detalhes desta oferta.').replace(/\n/g, '<br>');
-  const price = p.price == null
-    ? 'Consulte o valor na oferta'
-    : 'R$ ' + Number(p.price).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const platform = escapeHtml(p.platform || 'loja parceira');
-  const link = escapeHtml(p.affiliate_url || '#');
-  const image = escapeHtml(p.image_url || fallbackImage());
-
-  return `
-    <div style="max-width:760px;margin:0 auto;font-family:Arial,sans-serif;line-height:1.65;color:#202124">
-      <p style="font-size:13px;color:#6b7280"><em>Este conteúdo contém link de afiliado. Podemos receber uma comissão sem custo adicional para você.</em></p>
-      <img src="${image}" alt="${name}" style="width:100%;max-height:520px;object-fit:contain;border-radius:12px;margin:12px 0 22px">
-      <h2 style="font-size:25px;margin-bottom:12px">${name}: vale a pena?</h2>
-      <p>${desc}</p>
-      <div style="background:#f5f3ff;border-left:5px solid #7c3aed;padding:16px;margin:22px 0;border-radius:8px">
-        <strong style="font-size:22px;color:#5b21b6">${price}</strong><br>
-        <span>Oferta encontrada via ${platform}. Preço e disponibilidade podem mudar.</span>
-      </div>
-      <p style="text-align:center;margin:28px 0">
-        <a href="${link}" target="_blank" rel="nofollow sponsored noopener"
-           style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;font-weight:bold;padding:15px 24px;border-radius:10px">
-          Ver oferta na Shopee →
-        </a>
-      </p>
-      <p style="font-size:13px;color:#6b7280">Confira os detalhes, avaliações, prazo e condições diretamente na página da oferta antes de comprar.</p>
-    </div>`;
-}
 
 function generateAI(){
   const p = products.find(x=>String(x.id)===$('aiProduct').value);
@@ -789,10 +741,9 @@ function renderResultsCenter(){
     return '<tr><td>'+(index+1)+'</td><td>'+escapeHtml(p.name||'Sem título')+'</td><td>'+escapeHtml(p.platform||'Não informada')+'</td><td>'+x.score+'%</td><td>'+label+'</td></tr>';
   }).join('')||'<tr><td colspan="5" class="muted">Nenhum produto carregado.</td></tr>';
   const youtube=!!localStorage.getItem('youtube_access_token');
-  const blogger=!!localStorage.getItem('blogger_access_token');
   $('resultsConnections').innerHTML=
     '<p>'+(youtube?'✅':'⚠️')+' YouTube: '+(youtube?'token encontrado neste aparelho':'token não encontrado neste aparelho')+'</p>'+
-    '<p>'+(blogger?'✅':'⚠️')+' Blogger: '+(blogger?'token encontrado neste aparelho':'token não encontrado neste aparelho')+'</p>'+
+
     '<p>'+(hasValidation?'✅ Validador: resultados sincronizados neste aparelho.':'⚠️ Validador: toque em "Validar todos" para sincronizar os resultados.')+'</p>'+
     '<p>⏳ Cliques e vendas: aguardando a implantação do rastreamento no Supabase.</p>';
 }
@@ -930,7 +881,7 @@ function openValidatorEditor(id){
   openProductForm(String(id));
 }
 
-const ROBOT_CHANNEL_LABELS={instagram:'Instagram',youtube:'YouTube',facebook:'Facebook',pinterest:'Pinterest',blogger:'Blogger',tiktok:'TikTok',whatsapp:'WhatsApp'};
+const ROBOT_CHANNEL_LABELS={instagram:'Instagram',youtube:'YouTube',facebook:'Facebook',pinterest:'Pinterest',tiktok:'TikTok',whatsapp:'WhatsApp'};
 const ROBOT_STATUS_LABELS={pending:'Pendente',processing:'Processando',scheduled:'Programada',published:'Publicada',failed:'Erro',paused:'Pausada',cancelled:'Cancelada'};
 
 async function campaignQueueApi(body){
@@ -1011,7 +962,6 @@ async function pauseCentralJob(id){
 }
 
 const PUB_LABELS = {
-  blogger: 'Blogger',
   instagram: 'Instagram',
   facebook: 'Facebook',
   tiktok: 'TikTok',
@@ -1087,7 +1037,7 @@ function generateCampaign(){
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
         <h3 style="margin:0">${PUB_LABELS[ch]}</h3>
-        <span class="pubStatus ${ch === 'blogger' || ch === 'youtube' || ch === 'tiktok' || ch === 'facebook' ? 'warn' : 'ok'}">${ch === 'blogger' ? 'Publicação direta' : ch === 'instagram' ? 'Publicação automática' : ch === 'youtube' ? 'Publicação automática' : ch === 'facebook' ? 'Agendamento automático' : ch === 'tiktok' ? 'Vídeo automático' : ch === 'pinterest' ? 'Imagem automática' : 'Modo assistido'}</span>
+        <span class="pubStatus ${ch === 'youtube' || ch === 'tiktok' || ch === 'facebook' ? 'warn' : 'ok'}">${ch === 'instagram' ? 'Publicação automática' : ch === 'youtube' ? 'Publicação automática' : ch === 'facebook' ? 'Agendamento automático' : ch === 'tiktok' ? 'Vídeo automático' : ch === 'pinterest' ? 'Imagem automática' : 'Modo assistido'}</span>
       </div>
       <div class="aiout pubPreview" style="margin-top:12px">${escapeHtml(publicationContent(p,ch))}</div>
       ${ch === 'youtube' ? `
@@ -1115,7 +1065,7 @@ function generateCampaign(){
         </div>
         <button class="btn green" onclick="generateTikTokVideo()">🎵 Criar vídeo e abrir TikTok</button>
         <div id="tiktokVideoState" class="muted" style="margin-top:9px"></div>
-      ` : ch === 'blogger' ? '' : ch === 'instagram' ? `
+      ` : ch === 'instagram' ? `
         <div class="note" style="margin-top:12px">
           <b>Reel automático:</b> cria um vídeo vertical de 15 segundos com música instrumental original, textos do produto e hashtags.
         </div>
@@ -1704,37 +1654,13 @@ async function publishSelected(){
       return alert('Erro ao publicar no Instagram: ' + err.message);
     }
   }
-  const assisted = selected.filter(ch => !['blogger','youtube','instagram'].includes(ch));
+  const assisted = selected.filter(ch => !['youtube','instagram'].includes(ch));
   if(assisted.length){
     await assistPublish(assisted[0]);
     if(assisted.length > 1) alert('O primeiro canal assistido foi aberto. Use “Copiar e abrir” em cada cartão para publicar nos demais.');
   }
-  if(!selected.includes('blogger')){
-    if(button){ button.disabled = false; button.textContent = '🚀 Publicar selecionados'; }
-    if(selected.includes('instagram')) alert('📸 Publicado no Instagram com sucesso!');
-    return;
-  }
-  const token = localStorage.getItem('blogger_access_token');
-  if(!token){ alert('Para publicar também no Blogger, conecte-o primeiro em Integrações.'); return; }
-  try {
-    const blogsResponse = await fetch('https://www.googleapis.com/blogger/v3/users/self/blogs',{headers:{Authorization:'Bearer '+token}});
-    if(!blogsResponse.ok) throw new Error('Erro Blogger: '+await blogsResponse.text());
-    const blogsData = await blogsResponse.json();
-    if(!blogsData.items || !blogsData.items.length) throw new Error('Nenhum blog foi encontrado nesta conta.');
-    const blog = blogsData.items[0];
-    const postResponse = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${blog.id}/posts/`,{
-      method:'POST',
-      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-      body:JSON.stringify({kind:'blogger#post',blog:{id:blog.id},title:p.name,content:buildBloggerPostHtml(p),labels:[p.category,p.platform,'Ofertas'].filter(Boolean)})
-    });
-    if(!postResponse.ok) throw new Error(await postResponse.text());
-    publicationHistory.unshift({product:p.name,channel:'Blogger',status:'Publicado ✅',date:new Date().toLocaleString('pt-BR')});
-    renderPublicationHistory();
-    alert('🚀 Publicado no Blogger com sucesso!');
-  } catch(err){ console.error(err); alert('Erro ao publicar no Blogger: '+err.message); }
-  finally {
-    if(button){ button.disabled = false; button.textContent = '🚀 Publicar selecionados'; }
-  }
+  if(button){ button.disabled = false; button.textContent = '🚀 Publicar selecionados'; }
+  if(selected.includes('instagram')) alert('📸 Publicado no Instagram com sucesso!');
 }
 
 function renderPublicationHistory(){
@@ -1982,43 +1908,10 @@ loadProducts();
   <script src="https://accounts.google.com/gsi/client"></script>
 
 <script>
-const BLOGGER_CLIENT_ID = "8081863130-q3qll2egcjbusnaq237uj64u0odpsufh.apps.googleusercontent.com";
-const BLOGGER_SCOPE = "https://www.googleapis.com/auth/blogger";
+const GOOGLE_CLIENT_ID = "8081863130-q3qll2egcjbusnaq237uj64u0odpsufh.apps.googleusercontent.com";
 const YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube.upload";
 
-let bloggerTokenClient;
 let youtubeTokenClient;
-
-function conectarBlogger() {
-  if (!window.google || !google.accounts || !google.accounts.oauth2) {
-    alert("A conexão do Google ainda não carregou. Atualize a página e tente novamente.");
-    return;
-  }
-
-  bloggerTokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: BLOGGER_CLIENT_ID,
-    scope: BLOGGER_SCOPE,
-    callback: async (response) => {
-      if (response.error) {
-        alert("Erro ao conectar com o Blogger.");
-        return;
-      }
-
-      localStorage.setItem("blogger_access_token", response.access_token);
-
-      const status = document.getElementById("bloggerStatus");
-      if (status) {
-        status.textContent = "Conectado";
-        status.classList.remove("warn");
-        status.classList.add("ok");
-      }
-
-      alert("Blogger conectado com sucesso! 🚀");
-    }
-  });
-
-  bloggerTokenClient.requestAccessToken();
-}
 
 function conectarYoutube() {
   if (!window.google || !google.accounts || !google.accounts.oauth2) {
@@ -2026,7 +1919,7 @@ function conectarYoutube() {
     return;
   }
   youtubeTokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: BLOGGER_CLIENT_ID,
+    client_id: GOOGLE_CLIENT_ID,
     scope: YOUTUBE_SCOPE,
     callback: (response) => {
       if (response.error) return alert("Erro ao conectar com o YouTube: " + response.error);
@@ -2039,7 +1932,6 @@ function conectarYoutube() {
   youtubeTokenClient.requestAccessToken();
 }
 
-document.getElementById("btnConnectBlogger")?.addEventListener("click", conectarBlogger);
 document.getElementById("btnConnectYoutube")?.addEventListener("click", conectarYoutube);
 if(localStorage.getItem("youtube_access_token")){
   const status=document.getElementById("youtubeStatus");
