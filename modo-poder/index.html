@@ -5,17 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#111111" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <title>Modo Poder</title>
+  <title>Modo Poder V2</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div>
-      <div class="eyebrow">ASSISTENTE PESSOAL</div>
+      <div class="eyebrow">ASSISTENTE PESSOAL · V2</div>
       <h1>Modo Poder ⚡</h1>
     </div>
-    <button id="installBtn" class="ghost hidden">Instalar</button>
+    <div class="top-actions">
+      <span id="syncBadge" class="sync-badge">Local</span>
+      <button id="authBtn" class="ghost">Entrar</button>
+      <button id="installBtn" class="ghost hidden">Instalar</button>
+    </div>
   </header>
 
   <main>
@@ -43,6 +47,7 @@
             <label><input type="checkbox" class="priority-check" data-key="p2done"><input class="line-input" id="p2" placeholder="Prioridade 2"></label>
             <label><input type="checkbox" class="priority-check" data-key="p3done"><input class="line-input" id="p3" placeholder="Prioridade 3"></label>
           </div>
+          <button id="autoPlanBtn" class="secondary full spaced">Reorganizar meu dia</button>
         </div>
 
         <div class="card">
@@ -100,18 +105,48 @@
       </div>
     </section>
 
+    <section id="agenda" class="page">
+      <div class="card">
+        <span class="pill">AGENDA</span>
+        <h2>Compromissos e lembretes</h2>
+        <div class="agenda-form">
+          <input id="agendaTitle" placeholder="Compromisso ou tarefa">
+          <input id="agendaStart" type="datetime-local">
+          <select id="agendaLead">
+            <option value="0">Na hora</option>
+            <option value="5">5 min antes</option>
+            <option value="10" selected>10 min antes</option>
+            <option value="30">30 min antes</option>
+            <option value="60">1 h antes</option>
+          </select>
+          <button id="addAgenda" class="primary">Adicionar</button>
+        </div>
+        <p class="small muted">Os lembretes do aparelho funcionam melhor com notificações permitidas e o app aberto recentemente.</p>
+        <div id="agendaList" class="goal-list"></div>
+      </div>
+    </section>
+
     <section id="desempenho" class="page">
       <div class="grid three">
         <div class="card stat"><span>Prioridades</span><strong id="statPriorities">0/3</strong></div>
         <div class="card stat"><span>Hábitos</span><strong id="statHabits">0/6</strong></div>
         <div class="card stat"><span>Metas concluídas</span><strong id="statGoals">0</strong></div>
       </div>
-      <div class="card">
-        <h2>Revisão do dia</h2>
-        <textarea id="wins" placeholder="O que deu certo hoje?"></textarea>
-        <textarea id="improve" placeholder="O que precisa melhorar amanhã?"></textarea>
-        <button id="saveReview" class="primary">Salvar revisão</button>
-        <p id="reviewSaved" class="small muted"></p>
+      <div class="grid two">
+        <div class="card">
+          <h2>Revisão do dia</h2>
+          <textarea id="wins" placeholder="O que deu certo hoje?"></textarea>
+          <textarea id="improve" placeholder="O que precisa melhorar amanhã?"></textarea>
+          <button id="saveReview" class="primary">Salvar revisão</button>
+          <p id="reviewSaved" class="small muted"></p>
+        </div>
+        <div class="card">
+          <span class="pill">PLANEJADOR AUTOMÁTICO</span>
+          <h2>Leitura do seu desempenho</h2>
+          <div id="coachOutput" class="coach-output">Conclua algumas tarefas e toque em analisar.</div>
+          <button id="coachBtn" class="secondary full">Analisar meu dia</button>
+          <p class="small muted spaced">Esta versão usa regras baseadas nos seus dados. IA generativa em nuvem será ativada somente quando houver um provedor configurado com segurança.</p>
+        </div>
       </div>
     </section>
 
@@ -119,57 +154,58 @@
       <div class="card">
         <span class="pill">MENTALIDADE</span>
         <h2>Poder pessoal</h2>
-        <div class="lesson">
-          <h3>Disciplina</h3>
-          <p>Disciplina é cumprir o essencial mesmo quando a motivação oscila. Use metas pequenas, horários realistas e revisões frequentes.</p>
-        </div>
-        <div class="lesson">
-          <h3>Autoconfiança e ego saudável</h3>
-          <p>Confiança forte não precisa diminuir ninguém. Foque em postura, limites, respeito próprio, responsabilidade e competência.</p>
-        </div>
-        <div class="lesson">
-          <h3>Lei da Atração, de forma prática</h3>
-          <p>Use visualização, gratidão e intenção como ferramentas de foco. Elas não garantem resultados: o passo decisivo é transformar intenção em ações verificáveis.</p>
-        </div>
-        <div class="lesson">
-          <h3>Poder do que você pede</h3>
-          <p>Pedidos vagos geram planos vagos. Prefira: “Quero alcançar X até Y por meio destas ações: A, B e C”.</p>
-        </div>
-        <div class="lesson">
-          <h3>Postura e modos</h3>
-          <p>Ouça sem interromper, fale com clareza, cumpra combinados, evite prometer o que não consegue entregar e mantenha firmeza sem grosseria.</p>
-        </div>
+        <div class="lesson"><h3>Disciplina</h3><p>Disciplina é cumprir o essencial mesmo quando a motivação oscila. Use metas pequenas, horários realistas e revisões frequentes.</p></div>
+        <div class="lesson"><h3>Autoconfiança e ego saudável</h3><p>Confiança forte não precisa diminuir ninguém. Foque em postura, limites, respeito próprio, responsabilidade e competência.</p></div>
+        <div class="lesson"><h3>Lei da Atração, de forma prática</h3><p>Use visualização, gratidão e intenção como ferramentas de foco. Elas não garantem resultados: o passo decisivo é transformar intenção em ações verificáveis.</p></div>
+        <div class="lesson"><h3>Poder do que você pede</h3><p>Pedidos vagos geram planos vagos. Prefira: “Quero alcançar X até Y por meio destas ações: A, B e C”.</p></div>
+        <div class="lesson"><h3>Postura e modos</h3><p>Ouça sem interromper, fale com clareza, cumpra combinados, evite prometer o que não consegue entregar e mantenha firmeza sem grosseria.</p></div>
       </div>
     </section>
 
     <section id="config" class="page">
-      <div class="card">
-        <h2>Configurações</h2>
-        <label class="field">Seu nome
-          <input id="userName" placeholder="Seu nome">
-        </label>
-        <label class="field">Meta financeira do mês (R$)
-          <input id="monthlyMoney" type="number" min="0" placeholder="0">
-        </label>
-        <label class="field">Horário do Modo Poder
-          <input id="powerTime" type="time" value="05:00">
-        </label>
-        <button id="saveConfig" class="primary">Salvar configurações</button>
-        <button id="notifyBtn" class="secondary">Ativar notificações</button>
-        <p class="small muted">Observação: notificações dependem da permissão do navegador. Em alguns celulares, o app precisa estar aberto recentemente.</p>
+      <div class="grid two">
+        <div class="card">
+          <h2>Configurações</h2>
+          <label class="field">Seu nome<input id="userName" placeholder="Seu nome"></label>
+          <label class="field">Meta financeira do mês (R$)<input id="monthlyMoney" type="number" min="0" placeholder="0"></label>
+          <label class="field">Horário do Modo Poder<input id="powerTime" type="time" value="05:00"></label>
+          <button id="saveConfig" class="primary">Salvar configurações</button>
+          <button id="notifyBtn" class="secondary">Ativar notificações</button>
+        </div>
+        <div class="card">
+          <span class="pill">NUVEM</span>
+          <h2>Conta e sincronização</h2>
+          <p id="accountText" class="muted">Você está usando apenas este aparelho.</p>
+          <button id="accountAction" class="primary full">Entrar e sincronizar</button>
+          <p class="small muted spaced">Ao entrar, metas, hábitos, agenda e planejamento diário são sincronizados com o Supabase usando políticas que limitam cada conta aos próprios dados.</p>
+        </div>
       </div>
     </section>
   </main>
 
-  <nav class="bottom-nav">
+  <nav class="bottom-nav seven">
     <button data-page="hoje" class="nav-btn active">🏠<span>Hoje</span></button>
     <button data-page="habitos" class="nav-btn">🔥<span>Hábitos</span></button>
     <button data-page="metas" class="nav-btn">🎯<span>Metas</span></button>
+    <button data-page="agenda" class="nav-btn">🗓️<span>Agenda</span></button>
     <button data-page="desempenho" class="nav-btn">📊<span>Desempenho</span></button>
     <button data-page="mentalidade" class="nav-btn">⚡<span>Poder</span></button>
     <button data-page="config" class="nav-btn">⚙️<span>Ajustes</span></button>
   </nav>
 
+  <div id="authModal" class="modal hidden">
+    <div class="modal-card">
+      <button id="closeAuth" class="modal-close">×</button>
+      <span class="pill">LOGIN</span>
+      <h2>Sincronize seu Modo Poder</h2>
+      <p class="muted">Digite seu e-mail. O Supabase enviará um link de acesso.</p>
+      <input id="authEmail" type="email" placeholder="seuemail@exemplo.com">
+      <button id="sendMagicLink" class="primary full spaced">Enviar link de acesso</button>
+      <p id="authMessage" class="small muted"></p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
