@@ -12,7 +12,6 @@ const CHANNELS: Record<string, number[]> = {
   youtube: [9, 12, 16, 20],
   facebook: [9, 12, 15, 18, 21],
   pinterest: [9, 12, 15, 18, 21],
-  blogger: [9, 12, 16, 18, 21],
   tiktok: [11, 17, 21],
   whatsapp: [10, 16, 20],
 };
@@ -102,8 +101,7 @@ Deno.serve(async (req) => {
     let cursor = 0;
     for (const channel of channels) {
       const hours = CHANNELS[channel];
-      // Blogger recebe 10 produtos em dois dias (5 horários por dia).
-      const slots = nextSlots(hours, channel === "blogger" ? 10 : hours.length);
+      const slots = nextSlots(hours, hours.length);
       const channelUsed = usedByChannel.get(channel) || new Set<string>();
       for (const scheduledFor of slots) {
         let picked = null;
