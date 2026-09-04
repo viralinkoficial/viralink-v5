@@ -11,6 +11,7 @@ from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 
 def secret(name: str) -> str:
@@ -99,10 +100,22 @@ def main():
     synced = 0
 
     for batch in chunks(video_ids, 50):
-        response = yt.videos().list(
-            part="statistics,snippet,status",
-            id=",".join(batch),
-        ).execute()
+        try:
+            response = yt.videos().list(
+                part="statistics,snippet,status",
+                id=",".join(batch),
+            ).execute()
+        except HttpError as exc:
+            status = getattr(exc.resp, "status", None)
+            text = str(exc).lower()
+            if status == 403 and ("insufficient" in text or "permission" in text):
+                print(
+                    "Métricas aguardando autorização de leitura do YouTube. "
+                    "O token atual continua válido para uploads; para views/likes/comentários, "
+                    "adicione também o escopo youtube.readonly ao refresh token."
+                )
+                return
+            raise
 
         for item in response.get("items", []):
             video_id = str(item.get("id") or "")
