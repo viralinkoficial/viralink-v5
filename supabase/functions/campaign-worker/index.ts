@@ -123,80 +123,9 @@ async function publishYouTube(item: QueueItem) {
   return String(data.id);
 }
 
-async function bloggerAccessToken() {
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: required("BLOGGER_CLIENT_ID"),
-      client_secret: required("BLOGGER_CLIENT_SECRET"),
-      refresh_token: required("BLOGGER_REFRESH_TOKEN"),
-      grant_type: "refresh_token",
-    }),
-  });
-  const data = await response.json();
-  if (!response.ok || !data.access_token) {
-    throw new Error("Blogger OAuth: " + [data.error, data.error_description].filter(Boolean).join(" — ") || "HTTP " + response.status);
-  }
-  return String(data.access_token);
-}
-
-function escapeHtml(value: unknown) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-async function publishBlogger(item: QueueItem) {
-  const blogId = Deno.env.get("BLOGGER_BLOG_ID") || "2124501999986492802";
-  const token = await bloggerAccessToken();
-  const name = String(item.payload.name || item.product_name || "Achadinho VIRALINK").trim();
-  const description = String(item.payload.description || "").trim();
-  const imageUrl = String(item.payload.image_url || "");
-  const affiliateUrl = String(item.payload.affiliate_url || "");
-  if (!imageUrl.startsWith("https://")) throw new PauseError("Imagem HTTPS ausente.");
-  if (!affiliateUrl.startsWith("https://")) throw new PauseError("Link de afiliado HTTPS ausente.");
-
-  const rawPrice = item.payload.price == null ? "" : String(item.payload.price).replace(".", ",");
-  const price = rawPrice ? `<p><strong>💰 R$ ${escapeHtml(rawPrice)}</strong></p>` : "";
-  const content = [
-    `<div class="viralink-product" data-product-id="${escapeHtml(item.product_id)}">`,
-    `<p><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" style="max-width:100%;height:auto"></p>`,
-    description ? `<p>${escapeHtml(description).replaceAll("\\n", "<br>")}</p>` : "",
-    price,
-    `<p><a href="${escapeHtml(affiliateUrl)}" target="_blank" rel="nofollow sponsored noopener"><strong>👉 Ver oferta na Shopee</strong></a></p>`,
-    `<p><small>Oferta sujeita a alteração. VIRALINK Achadinhos.</small></p>`,
-    "</div>",
-  ].join("\n");
-
-  const response = await fetch(
-    `https://www.googleapis.com/blogger/v3/blogs/${encodeURIComponent(blogId)}/posts/`,
-    {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json; charset=UTF-8" },
-      body: JSON.stringify({
-        kind: "blogger#post",
-        blog: { id: blogId },
-        title: name.slice(0, 120),
-        content,
-        labels: ["VIRALINK", "Achadinhos", "Shopee", String(item.payload.category || "Ofertas").slice(0, 50)],
-      }),
-    },
-  );
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || !data.id) {
-    throw new Error("Blogger não confirmou a publicação: " + (data.error?.message || "HTTP " + response.status));
-  }
-  return String(data.id);
-}
-
 async function publish(item: QueueItem) {
   if (item.channel === "instagram") return await publishInstagram(item);
   if (item.channel === "youtube") return await publishYouTube(item);
-  if (item.channel === "blogger") return await publishBlogger(item);
   throw new PauseError("Canal ainda sem executor automático: " + item.channel);
 }
 
