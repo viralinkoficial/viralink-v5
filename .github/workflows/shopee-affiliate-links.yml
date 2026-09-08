@@ -1,0 +1,41 @@
+name: Converter links Shopee para afiliados
+
+on:
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: "Quantidade de produtos para converter neste lote (1-100)"
+        required: false
+        default: "20"
+      sub_id:
+        description: "Sub ID para rastrear as vendas no VIRALINK"
+        required: false
+        default: "viralink"
+
+concurrency:
+  group: viralink-shopee-affiliate-links
+  cancel-in-progress: false
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: automation/requirements.txt
+      - run: pip install requests==2.32.4
+      - name: Converter e reativar produtos
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SHOPEE_AFFILIATE_APP_ID: ${{ secrets.SHOPEE_AFFILIATE_APP_ID }}
+          SHOPEE_AFFILIATE_SECRET: ${{ secrets.SHOPEE_AFFILIATE_SECRET }}
+          SHOPEE_BATCH_SIZE: ${{ inputs.batch_size }}
+          SHOPEE_SUB_ID: ${{ inputs.sub_id }}
+        run: python automation/shopee_affiliate_links.py
