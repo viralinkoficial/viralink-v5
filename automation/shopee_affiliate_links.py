@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Converte links Shopee comuns em links oficiais de afiliado e reativa os produtos.
+"""Converte links Shopee comuns em links oficiais de afiliado.
 
-O script processa somente produtos Shopee inativos cujo ``affiliate_url`` ainda usa
-``shope.ee/an_redir?origin_link=...``. O ``origin_link`` é extraído e enviado à
-Open API de Afiliados da Shopee via ``generateShortLink``.
+O script processa produtos Shopee inativos cujo ``affiliate_url`` ainda usa
+``shope.ee/an_redir?origin_link=...``. Links duplicados são convertidos apenas uma
+vez: todas as cópias recebem o novo link, mas somente o registro mais recente
+(maior ID) é reativado. Isso evita duplicatas na vitrine.
 
 Credenciais obrigatórias (somente em ambiente seguro, nunca no frontend):
 - SUPABASE_URL
@@ -13,7 +14,7 @@ Credenciais obrigatórias (somente em ambiente seguro, nunca no frontend):
 
 Configuração opcional:
 - SHOPEE_AFFILIATE_API (default BR)
-- SHOPEE_BATCH_SIZE (default 20, máximo 100)
+- SHOPEE_BATCH_SIZE (default 20, máximo 100 links únicos)
 - SHOPEE_SUB_ID (default viralink)
 """
 
@@ -54,13 +55,15 @@ SB_HEADERS = {
 
 
 def fetch_pending_products() -> list[dict]:
+    # A base histórica possui duplicatas. Busca todas as pendências (o conjunto atual
+    # cabe no limite 1000) e reduz localmente para BATCH_SIZE links únicos.
     params = {
         "platform": "ilike.Shopee",
         "status": "eq.inactive",
         "affiliate_url": "like.https://shope.ee/an_redir?origin_link=*",
         "select": "id,name,affiliate_url",
         "order": "id.asc",
-        "limit": str(BATCH_SIZE),
+        "limit": "1000",
     }
     response = requests.get(
         f"{SUPABASE_URL}/rest/v1/products",
@@ -69,7 +72,17 @@ def fetch_pending_products() -> list[dict]:
         timeout=45,
     )
     response.raise_for_status()
-    return response.json()
+    rows = response.json()
+
+    # Um representante por URL antiga. Mantemos o maior ID como registro canônico,
+    # pois é a cópia mais recente do produto na base.
+    unique: dict[str, dict] = {}
+    for row in rows:
+        old_url = str(row.get("affiliate_url") or "")
+        current = unique.get(old_url)
+        if current is None or int(row["id"]) > int(current["id"]):
+            unique[old_url] = row
+    return list(unique.values())[:BATCH_SIZE]
 
 
 def extract_origin_url(redirect_url: str) -> str:
@@ -144,18 +157,37 @@ def shopee_short_link(origin_url: str, product_id: int) -> str:
     return short_link
 
 
-def activate_product(product_id: int, short_link: str) -> None:
+def save_converted_group(old_url: str, canonical_id: int, short_link: str) -> int:
+    # Primeiro corrige TODAS as cópias históricas desse produto, sem reativá-las.
     response = requests.patch(
         f"{SUPABASE_URL}/rest/v1/products",
         headers={**SB_HEADERS, "Prefer": "return=representation"},
-        params={"id": f"eq.{product_id}"},
-        json={"affiliate_url": short_link, "status": "active"},
+        params={
+            "platform": "ilike.Shopee",
+            "status": "eq.inactive",
+            "affiliate_url": f"eq.{old_url}",
+        },
+        json={"affiliate_url": short_link},
+        timeout=45,
+    )
+    response.raise_for_status()
+    changed = response.json()
+    if not changed:
+        raise RuntimeError("Supabase não encontrou o grupo a ser atualizado")
+
+    # Depois reativa somente a cópia canônica (mais recente).
+    response = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/products",
+        headers={**SB_HEADERS, "Prefer": "return=representation"},
+        params={"id": f"eq.{canonical_id}", "affiliate_url": f"eq.{short_link}"},
+        json={"status": "active"},
         timeout=45,
     )
     response.raise_for_status()
     rows = response.json()
-    if len(rows) != 1 or rows[0].get("affiliate_url") != short_link:
-        raise RuntimeError(f"Supabase não confirmou atualização do produto {product_id}")
+    if len(rows) != 1 or rows[0].get("status") != "active":
+        raise RuntimeError(f"Supabase não confirmou reativação do produto {canonical_id}")
+    return len(changed)
 
 
 def main() -> None:
@@ -166,21 +198,30 @@ def main() -> None:
 
     converted = 0
     failed = 0
+    corrected_rows = 0
     for product in products:
         product_id = int(product["id"])
+        old_url = product["affiliate_url"]
         try:
-            origin_url = extract_origin_url(product["affiliate_url"])
+            origin_url = extract_origin_url(old_url)
             short_link = shopee_short_link(origin_url, product_id)
-            activate_product(product_id, short_link)
+            group_size = save_converted_group(old_url, product_id, short_link)
+            corrected_rows += group_size
             converted += 1
-            print(f"OK #{product_id}: {product.get('name', '')} -> {short_link}")
+            print(
+                f"OK #{product_id}: {product.get('name', '')} -> {short_link} "
+                f"({group_size} registro(s) corrigido(s), 1 ativo)"
+            )
             # Evita rajadas desnecessárias na API.
             time.sleep(0.35)
         except Exception as exc:
             failed += 1
             print(f"ERRO #{product_id}: {exc}")
 
-    print(f"Resumo: convertidos={converted}, falhas={failed}, lote={len(products)}")
+    print(
+        f"Resumo: links_unicos_convertidos={converted}, registros_corrigidos={corrected_rows}, "
+        f"falhas={failed}, lote={len(products)}"
+    )
     if failed:
         raise SystemExit(1)
 
