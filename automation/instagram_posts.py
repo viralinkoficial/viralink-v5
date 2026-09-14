@@ -33,6 +33,19 @@ def api(method: str, path: str, **kwargs):
     return response.json() if response.content else None
 
 
+def ceo_user_id() -> str:
+    response = requests.get(f"{SB}/auth/v1/admin/users?page=1&per_page=1000", headers=HEADERS, timeout=45)
+    response.raise_for_status()
+    users = response.json().get("users", [])
+    owner = next(
+        (u for u in users if str(u.get("email", "")).lower() == "vivianeferreiracaroline@gmail.com"),
+        None,
+    )
+    if not owner:
+        raise RuntimeError("Conta CEO não encontrada no Supabase Auth.")
+    return str(owner["id"])
+
+
 def graph_get(path: str, token: str, **params):
     response = requests.get(
         f"https://graph.facebook.com/{GRAPH_VERSION}/{path}",
@@ -143,9 +156,11 @@ def create_processing_job(product):
             "status": "processing",
             "attempts": 1,
             "payload": payload,
+            "created_by": ceo_user_id(),
         },
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise RuntimeError(f"Fila Instagram HTTP {response.status_code}: {response.text[:500]}")
     rows = response.json()
     if not rows:
         raise RuntimeError("A fila do Instagram não retornou o job criado.")
