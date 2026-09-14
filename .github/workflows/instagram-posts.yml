@@ -1,9 +1,6 @@
 name: Publicar Instagram VIRALINK
 
 on:
-  schedule:
-    # 10h, 14h e 18h em Belém (UTC-3)
-    - cron: "0 13,17,21 * * *"
   workflow_dispatch:
   push:
     paths:
