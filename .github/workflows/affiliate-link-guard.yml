@@ -1,0 +1,68 @@
+name: Aplicar proteção de links afiliados
+
+on:
+  push:
+    paths:
+      - 'affiliate-links.html'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Atualizar painel VIRALINK
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('index.html')
+          s = path.read_text(encoding='utf-8')
+          original = s
+
+          nav_anchor = '    <button data-page="validator">✅ Validador</button>\n'
+          nav_item = '    <button data-href="affiliate-links.html">🔗 Links de Afiliados</button>\n'
+          if nav_item not in s and nav_anchor in s:
+              s = s.replace(nav_anchor, nav_anchor + nav_item, 1)
+
+          old_nav_js = "document.querySelectorAll('.nav button').forEach(b => b.onclick = () => showPage(b.dataset.page));"
+          new_nav_js = "document.querySelectorAll('.nav button').forEach(b => b.onclick = () => { if(b.dataset.href){ window.location.href=b.dataset.href; return; } showPage(b.dataset.page); });"
+          if old_nav_js in s:
+              s = s.replace(old_nav_js, new_nav_js, 1)
+
+          validator_line = "  if(!validHttpsUrl(p.affiliate_url)) blocked.push('Link de afiliada HTTPS ausente ou inválido');"
+          verified_line = "  if(!p.affiliate_verified) blocked.push('Link de afiliada ainda não verificado');"
+          if validator_line in s and verified_line not in s:
+              s = s.replace(validator_line, validator_line + '\n' + verified_line, 1)
+
+          s = s.replace(
+              "affiliate_url:p.affiliate_url,status:'active'",
+              "affiliate_url:p.affiliate_url,affiliate_verified:false,status:'inactive'"
+          )
+          s = s.replace(
+              "Importando e publicando ${fresh.length} produtos autorizados...",
+              "Importando ${fresh.length} produtos para revisão do link de afiliada..."
+          )
+          s = s.replace(
+              "produtos publicados na vitrine${skipped?` · ${skipped} repetidos ignorados`:''}.",
+              "produtos importados para revisão em Links de Afiliados${skipped?` · ${skipped} repetidos ignorados`:''}."
+          )
+
+          if s != original:
+              path.write_text(s, encoding='utf-8')
+
+      - name: Publicar alteração
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "Nenhuma alteração necessária."
+            exit 0
+          fi
+          git config user.name "VIRALINK Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "feat: bloquear publicação sem link afiliado verificado"
+          git push
