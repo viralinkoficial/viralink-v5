@@ -1,0 +1,51 @@
+name: Publicar Instagram VIRALINK
+
+on:
+  schedule:
+    # 10h, 14h e 18h em Belém (UTC-3)
+    - cron: "0 13,17,21 * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - "automation/instagram-trigger.txt"
+
+concurrency:
+  group: viralink-instagram-posts
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verificar configuração Meta
+        env:
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          test -n "$FACEBOOK_PAGE_ID"
+          test -n "$FACEBOOK_PAGE_ACCESS_TOKEN"
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_SERVICE_ROLE_KEY"
+          echo "Credenciais básicas disponíveis."
+
+      - name: Instalar dependência
+        run: pip install requests==2.32.4
+
+      - name: Publicar produto verificado no Instagram
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+          META_GRAPH_VERSION: v26.0
+        run: python automation/instagram_posts.py
