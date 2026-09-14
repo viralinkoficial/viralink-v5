@@ -201,11 +201,12 @@ def publish_instagram(account_id: str, page_token: str, product):
 
 
 def main():
+    # Primeiro valida toda a conexão Meta; nenhuma tentativa da fila é consumida se o Instagram não estiver vinculado.
+    page_token = resolve_page_token()
+    account_id = instagram_account_id(page_token)
     product = select_product()
     job = create_processing_job(product)
     try:
-        page_token = resolve_page_token()
-        account_id = instagram_account_id(page_token)
         publication_id = publish_instagram(account_id, page_token, product)
         api(
             "PATCH",
@@ -214,10 +215,11 @@ def main():
         )
         print(f"Instagram publicado. publication_id={publication_id}")
     except Exception as exc:
+        # 'paused' impede que o worker central tente roubar/reprocessar este job.
         api(
             "PATCH",
             f"campaign_queue?id=eq.{job['id']}",
-            json={"status": "failed", "error_message": str(exc)[:1000]},
+            json={"status": "paused", "error_message": str(exc)[:1000]},
         )
         raise
 
