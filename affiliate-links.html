@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VIRALINK — Links de Afiliados</title>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#07111f;--card:#0d1a2e;--line:#25344f;--muted:#9fb0c9;--purple:#7c3aed;--purple2:#a855f7;--green:#22c55e;--red:#fb7185;--yellow:#fde68a}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#f8fafc}
+.wrap{max-width:1450px;margin:auto;padding:24px}
+.top{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+.brand{font-size:26px;font-weight:900;font-style:italic}.brand span{color:var(--purple2)}
+a.back{color:#ddd6fe;text-decoration:none;border:1px solid #443264;background:#141c2c;padding:10px 13px;border-radius:10px;font-weight:700}
+h1{margin:28px 0 6px;font-size:32px}.sub{color:var(--muted);line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px}.metric b{display:block;font-size:28px;margin-top:8px}
+.notice{border-left:4px solid var(--purple2);background:#15132b;padding:14px 16px;border-radius:10px;margin:16px 0;line-height:1.5}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:16px 0}.toolbar input,.toolbar select,.login input{background:#081525;border:1px solid #2a3b57;color:#fff;border-radius:9px;padding:11px;font:inherit}.toolbar input{min-width:280px;flex:1}.btn{border:0;color:#fff;font-weight:700;border-radius:9px;padding:10px 13px;cursor:pointer;background:linear-gradient(90deg,#6d28d9,#9333ea)}.btn.secondary{background:#14233a;border:1px solid #34445f}.btn.green{background:#15803d}.btn.red{background:#b91c1c}.btn:disabled{opacity:.5;cursor:not-allowed}
+.tableWrap{overflow:auto;border:1px solid var(--line);border-radius:13px}.table{width:100%;border-collapse:collapse;min-width:980px}.table th,.table td{padding:11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px}.table th{color:#c4b5fd;background:#0d1a2e;position:sticky;top:0}.linkInput{width:100%;min-width:330px;background:#081525;border:1px solid #2a3b57;color:#fff;border-radius:8px;padding:9px}.badge{display:inline-block;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:700}.ok{background:#0b2b22;border:1px solid #14532d;color:#86efac}.blocked{background:#3a0d18;border:1px solid #7f1d1d;color:#fca5a5}.warn{background:#3a2a0d;border:1px solid #854d0e;color:#fde68a}.actions{display:flex;gap:6px;flex-wrap:wrap}.small{font-size:12px;padding:8px 9px}.empty{text-align:center;color:var(--muted);padding:35px}.hide{display:none!important}.login{max-width:520px;margin:35px auto}.error{color:#fca5a5;margin-top:10px}.success{color:#86efac;margin-top:10px}.muted{color:var(--muted)}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.wrap{padding:16px}.toolbar input{min-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">▶ VIRA<span>LINK</span></div>
+    <a class="back" href="index.html">← Voltar ao painel</a>
+  </div>
+
+  <div id="app" class="hide">
+    <h1>🔗 Links de Afiliados</h1>
+    <div class="sub">Central de segurança para impedir que o VIRALINK publique produtos sem um link de afiliada confirmado.</div>
+
+    <div class="grid">
+      <div class="card metric">Verificados<b id="verifiedCount">—</b><span class="muted">Liberados para publicar</span></div>
+      <div class="card metric">Aguardando verificação<b id="pendingCount">—</b><span class="muted">Continuam bloqueados</span></div>
+      <div class="card metric">Total no banco<b id="totalCount">—</b><span class="muted">Ativos + inativos</span></div>
+    </div>
+
+    <div class="notice"><b>Regra automática ativa:</b> se um link for novo, alterado ou não estiver verificado, o banco força o produto para <b>inativo</b>. Ele só pode aparecer na vitrine depois de ser marcado como verificado.</div>
+
+    <div class="toolbar">
+      <input id="search" placeholder="Buscar produto ou link...">
+      <select id="filter">
+        <option value="all">Todos</option>
+        <option value="verified">🟢 Verificados</option>
+        <option value="pending">🔴 Não verificados</option>
+      </select>
+      <button class="btn secondary" onclick="loadProducts()">↻ Atualizar</button>
+    </div>
+
+    <div class="tableWrap">
+      <table class="table">
+        <thead><tr><th>Produto</th><th>Plataforma</th><th>Link de afiliada</th><th>Verificação</th><th>Publicação</th><th>Ações</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="login" class="card login hide">
+    <h2>🔒 Acesso da CEO</h2>
+    <p class="muted">Entre com a conta do VIRALINK para revisar e liberar os links.</p>
+    <input id="email" type="email" value="vivianeferreiracaroline@gmail.com" style="width:100%" aria-label="E-mail">
+    <button class="btn" style="margin-top:12px;width:100%" onclick="sendMagicLink()">Enviar link de acesso</button>
+    <div id="loginMsg"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL='https://pfbzdktlfdotsgfarhel.supabase.co';
+const SUPABASE_KEY='sb_publishable_nXkBQxBy18WoOH21matfzg_CQdDCvLi';
+const CEO_EMAIL='vivianeferreiracaroline@gmail.com';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let session=null;
+let products=[];
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isCEO=()=>!!session&&String(session.user?.email||'').toLowerCase()===CEO_EMAIL;
+
+function technicalAffiliateLinkOk(p,url=p.affiliate_url){
+  try{
+    const u=new URL(String(url||'').trim());
+    if(u.protocol!=='https:') return false;
+    if(String(p.platform||'').toLowerCase()==='shopee') return u.hostname==='s.shopee.com.br'&&u.pathname.length>2;
+    return true;
+  }catch{return false}
+}
+
+function badge(p){
+  if(p.affiliate_verified) return '<span class="badge ok">🟢 Verificado</span>';
+  if(technicalAffiliateLinkOk(p)) return '<span class="badge warn">🟡 Revisar</span>';
+  return '<span class="badge blocked">🔴 Bloqueado</span>';
+}
+
+function render(){
+  const q=$('search').value.trim().toLowerCase();
+  const f=$('filter').value;
+  const list=products.filter(p=>{
+    if(f==='verified'&&!p.affiliate_verified) return false;
+    if(f==='pending'&&p.affiliate_verified) return false;
+    const hay=(p.name+' '+(p.affiliate_url||'')+' '+(p.platform||'')).toLowerCase();
+    return !q||hay.includes(q);
+  });
+
+  $('verifiedCount').textContent=products.filter(p=>p.affiliate_verified).length;
+  $('pendingCount').textContent=products.filter(p=>!p.affiliate_verified).length;
+  $('totalCount').textContent=products.length;
+
+  $('rows').innerHTML=list.length?list.map(p=>`<tr>
+    <td><b>${esc(p.name||'Sem nome')}</b><br><small class="muted">ID ${esc(p.id)}</small></td>
+    <td>${esc(p.platform||'—')}</td>
+    <td><input class="linkInput" id="link-${esc(p.id)}" value="${esc(p.affiliate_url||'')}" aria-label="Link de afiliada"></td>
+    <td>${badge(p)}${p.affiliate_verified_at?`<br><small class="muted">${new Date(p.affiliate_verified_at).toLocaleString('pt-BR')}</small>`:''}</td>
+    <td>${p.status==='active'?'<span class="badge ok">Liberada</span>':'<span class="badge blocked">Não publicar</span>'}</td>
+    <td><div class="actions">
+      <button class="btn secondary small" onclick="saveLink('${esc(p.id)}')">Salvar link</button>
+      ${p.affiliate_verified?`<button class="btn red small" onclick="blockLink('${esc(p.id)}')">Bloquear</button>`:`<button class="btn green small" onclick="verifyLink('${esc(p.id)}')">Verificar e liberar</button>`}
+    </div></td>
+  </tr>`).join(''):`<tr><td colspan="6" class="empty">Nenhum produto encontrado.</td></tr>`;
+}
+
+async function loadProducts(){
+  if(!isCEO()) return showLogin();
+  const {data,error}=await sb.from('products').select('id,created_at,name,platform,affiliate_url,status,affiliate_verified,affiliate_verified_at').order('created_at',{ascending:false});
+  if(error){alert('Erro ao carregar produtos: '+error.message);return}
+  products=data||[];
+  render();
+}
+
+async function saveLink(id){
+  const p=products.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  const link=$('link-'+id).value.trim();
+  if(!link.startsWith('https://')) return alert('O link precisa começar com https://');
+  const {error}=await sb.from('products').update({affiliate_url:link}).eq('id',id);
+  if(error) return alert('Não foi possível salvar: '+error.message);
+  await loadProducts();
+  alert('Link salvo. Como ele foi alterado, o produto ficou bloqueado até nova verificação.');
+}
+
+async function verifyLink(id){
+  const p=products.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  const link=$('link-'+id).value.trim();
+  if(link!==String(p.affiliate_url||'')) return alert('Você alterou o link. Clique primeiro em “Salvar link” e depois verifique.');
+  if(!technicalAffiliateLinkOk(p,link)){
+    if(String(p.platform||'').toLowerCase()==='shopee') return alert('Para Shopee, o VIRALINK só libera nesta tela links curtos no formato https://s.shopee.com.br/...');
+    return alert('O link não passou na validação técnica.');
+  }
+  const {error}=await sb.from('products').update({affiliate_verified:true,status:'active'}).eq('id',id);
+  if(error) return alert('Não foi possível verificar: '+error.message);
+  await loadProducts();
+}
+
+async function blockLink(id){
+  const {error}=await sb.from('products').update({affiliate_verified:false,status:'inactive'}).eq('id',id);
+  if(error) return alert('Não foi possível bloquear: '+error.message);
+  await loadProducts();
+}
+
+function showLogin(){
+  $('app').classList.add('hide');
+  $('login').classList.remove('hide');
+}
+function showApp(){
+  $('login').classList.add('hide');
+  $('app').classList.remove('hide');
+}
+
+async function sendMagicLink(){
+  const email=$('email').value.trim().toLowerCase();
+  $('loginMsg').className='muted';
+  $('loginMsg').textContent='Enviando...';
+  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+  if(error){$('loginMsg').className='error';$('loginMsg').textContent=error.message;return}
+  $('loginMsg').className='success';
+  $('loginMsg').textContent='Link enviado. Abra o e-mail e volte para esta página.';
+}
+
+$('search').addEventListener('input',render);
+$('filter').addEventListener('change',render);
+
+(async()=>{
+  const {data}=await sb.auth.getSession();
+  session=data.session;
+  if(isCEO()){showApp();await loadProducts()}else showLogin();
+})();
+
+sb.auth.onAuthStateChange(async(_event,sess)=>{
+  session=sess;
+  if(isCEO()){showApp();await loadProducts()}else showLogin();
+});
+</script>
+</body>
+</html>
