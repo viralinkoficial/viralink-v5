@@ -4,7 +4,7 @@
 O script processa produtos Shopee inativos cujo ``affiliate_url`` ainda usa
 ``shope.ee/an_redir?origin_link=...``. Links duplicados são convertidos apenas uma
 vez: todas as cópias recebem o novo link, mas somente o registro mais recente
-(maior ID) é reativado. Isso evita duplicatas na vitrine.
+(maior ID) é verificado e reativado. Isso evita duplicatas na vitrine.
 
 Credenciais obrigatórias (somente em ambiente seguro, nunca no frontend):
 - SUPABASE_URL
@@ -175,18 +175,23 @@ def save_converted_group(old_url: str, canonical_id: int, short_link: str) -> in
     if not changed:
         raise RuntimeError("Supabase não encontrou o grupo a ser atualizado")
 
-    # Depois reativa somente a cópia canônica (mais recente).
+    # Depois verifica e reativa somente a cópia canônica (mais recente).
+    # O banco bloqueia qualquer produto ativo cujo affiliate_verified seja falso.
     response = requests.patch(
         f"{SUPABASE_URL}/rest/v1/products",
         headers={**SB_HEADERS, "Prefer": "return=representation"},
         params={"id": f"eq.{canonical_id}", "affiliate_url": f"eq.{short_link}"},
-        json={"status": "active"},
+        json={"affiliate_verified": True, "status": "active"},
         timeout=45,
     )
     response.raise_for_status()
     rows = response.json()
-    if len(rows) != 1 or rows[0].get("status") != "active":
-        raise RuntimeError(f"Supabase não confirmou reativação do produto {canonical_id}")
+    if (
+        len(rows) != 1
+        or rows[0].get("status") != "active"
+        or rows[0].get("affiliate_verified") is not True
+    ):
+        raise RuntimeError(f"Supabase não confirmou verificação/reativação do produto {canonical_id}")
     return len(changed)
 
 
