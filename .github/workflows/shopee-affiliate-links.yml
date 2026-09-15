@@ -11,10 +11,6 @@ on:
         description: "Sub ID para rastrear as vendas no VIRALINK"
         required: false
         default: "viralink"
-  push:
-    branches: [main]
-    paths:
-      - "automation/shopee_affiliate_links.py"
 
 concurrency:
   group: viralink-shopee-affiliate-links
@@ -40,6 +36,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SHOPEE_AFFILIATE_APP_ID: ${{ secrets.SHOPEE_AFFILIATE_APP_ID }}
           SHOPEE_AFFILIATE_SECRET: ${{ secrets.SHOPEE_AFFILIATE_SECRET }}
-          SHOPEE_BATCH_SIZE: ${{ inputs.batch_size || '20' }}
-          SHOPEE_SUB_ID: ${{ inputs.sub_id || 'viralink' }}
+          SHOPEE_BATCH_SIZE: ${{ inputs.batch_size }}
+          SHOPEE_SUB_ID: ${{ inputs.sub_id }}
         run: python automation/shopee_affiliate_links.py
