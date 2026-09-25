@@ -2,8 +2,8 @@ name: Verificar saúde YouTube Shorts
 
 on:
   schedule:
-    # Confere o ritmo 30 minutos após cada hora, no período de publicação.
-    - cron: "30 9-23,0-2 * * *"
+    # Confere o ritmo 28 minutos após o disparo do Short.
+    - cron: "45 9-23,0-2 * * *"
   workflow_dispatch:
   push:
     branches: [main]
