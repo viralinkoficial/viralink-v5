@@ -2,8 +2,9 @@ name: Publicar YouTube Shorts
 
 on:
   schedule:
-    # 18 Shorts por dia: de 6h a 23h, de hora em hora, em Belém (UTC-3)
-    - cron: "0 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2 * * *"
+    # 18 Shorts por dia: de 6h a 23h, de hora em hora, em Belém (UTC-3).
+    # Rodamos aos 17 minutos para evitar a faixa mais congestionada do scheduler do GitHub.
+    - cron: "17 9-23,0-2 * * *"
   workflow_dispatch:
 
 concurrency:
