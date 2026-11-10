@@ -170,7 +170,9 @@
           <label class="field">Meta financeira do mês (R$)<input id="monthlyMoney" type="number" min="0" placeholder="0"></label>
           <label class="field">Horário do Modo Poder<input id="powerTime" type="time" value="05:00"></label>
           <button id="saveConfig" class="primary">Salvar configurações</button>
-          <button id="notifyBtn" class="secondary">Ativar notificações</button>
+          <button id="notifyBtn" class="secondary">Ativar notificações no aplicativo</button>
+          <button id="pushEnableBtn" class="primary">Ativar alarmes com aplicativo fechado</button>
+          <p id="pushStatus" class="small muted">Entre na sua conta e ative os alarmes para receber notificações em segundo plano.</p>
         </div>
         <div class="card">
           <span class="pill">NUVEM</span>
@@ -207,5 +209,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js"></script>
   <script src="app.js"></script>
+  <script src="push.js"></script>
 </body>
 </html>
