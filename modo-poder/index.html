@@ -154,15 +154,15 @@
 
     <section id="dinheiro" class="page">
       <div class="card money-hero">
-        <span class="pill">PROJETO V · OPERAÇÃO 15 DIAS</span>
-        <h2>R$ 10.000 para reorganizar sua vida financeira</h2>
-        <p class="muted">Registre somente dinheiro efetivamente recebido. Propostas e vendas ainda não pagas não entram no total.</p>
-        <div class="money-total"><strong id="moneyReceived">R$ 0,00</strong><span>recebido de R$ 10.000</span></div>
-        <div class="money-progress"><span id="moneyProgress"></span></div>
-        <div class="grid two money-stats">
-          <div><span>Falta receber</span><strong id="moneyRemaining">R$ 10.000,00</strong></div>
-          <div><span>Dias restantes</span><strong id="moneyDays">15</strong></div>
+        <span class="pill">PROJETO V · PAINEL FINANCEIRO</span>
+        <h2>Os três números que movem o Projeto V</h2>
+        <p class="muted">Acompanhe entradas confirmadas, dívidas em aberto e o valor separado para as casas.</p>
+        <div class="grid three project-v-indicators">
+          <div class="project-v-indicator"><span>1 · Dinheiro recebido</span><strong id="moneyReceived">R$ 0,00</strong><small>Entradas já pagas</small></div>
+          <div class="project-v-indicator"><span>2 · Falta quitar</span><strong id="debtRemaining">R$ 0,00</strong><small>Dívidas em aberto</small></div>
+          <div class="project-v-indicator"><span>3 · Reserva das casas</span><strong id="houseReserveTotal">R$ 0,00</strong><small>Dinheiro separado</small></div>
         </div>
+        <div class="money-target"><div class="section-head"><span>Meta inicial de recebimentos</span><strong id="moneyTargetLabel">R$ 0,00 / R$ 10.000,00</strong></div><div class="money-progress"><span id="moneyProgress"></span></div></div>
         <label class="field">Início da operação<input id="moneyStart" type="date"></label>
       </div>
       <div class="grid two">
@@ -181,6 +181,18 @@
           <button id="addDebt" class="secondary full">Adicionar dívida</button>
           <div class="money-stats"><span>Total de dívidas registradas</span><strong id="debtTotal">R$ 0,00</strong></div>
         </div>
+      </div>
+      <div class="card spaced">
+        <h3>Separar dinheiro para as casas</h3>
+        <p class="small muted">Registre somente o valor que você já transferiu ou guardou de fato. Esse registro não será contado novamente como recebimento.</p>
+        <div class="grid two">
+          <label class="field">Valor reservado (R$)<input id="reserveValue" type="number" min="0.01" step="0.01" placeholder="0,00"></label>
+          <label class="field">Data em que guardou<input id="reserveDate" type="date"></label>
+        </div>
+        <label class="field">Onde está guardado / observação<input id="reserveNote" placeholder="Ex.: poupança, conta separada ou dinheiro guardado"></label>
+        <button id="addReserve" class="primary full">Registrar valor reservado</button>
+        <div class="section-head spaced"><h3>Movimentações da reserva</h3><span class="small muted" id="reserveCount">0 registros</span></div>
+        <div id="reserveList" class="money-list"><p class="muted">Ainda não há valores reservados.</p></div>
       </div>
       <div class="card">
         <div class="section-head"><h3>Entradas registradas</h3><span id="incomeCount" class="small muted">0 recebimentos</span></div>
