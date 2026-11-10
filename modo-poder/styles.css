@@ -98,7 +98,7 @@ button{border:0;border-radius:14px;padding:12px 15px;font-weight:700;cursor:poin
   padding:7px;background:rgba(18,18,22,.94);backdrop-filter:blur(18px);
   border:1px solid #2c2c35;border-radius:22px
 }
-.bottom-nav.seven{grid-template-columns:repeat(7,1fr)}
+.bottom-nav.seven{grid-template-columns:repeat(8,1fr)}
 .nav-btn{background:transparent;color:#8e8e9b;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:1rem;padding:8px 4px}
 .nav-btn span{font-size:.62rem}.nav-btn.active{background:#f2f2f5;color:#111}
 .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.68);display:grid;place-items:center;padding:18px;backdrop-filter:blur(8px)}
@@ -106,6 +106,6 @@ button{border:0;border-radius:14px;padding:12px 15px;font-weight:700;cursor:poin
 .modal-close{position:absolute;right:12px;top:10px;background:transparent;color:#aaa;font-size:1.6rem;padding:8px}
 @media(max-width:760px){
   .grid.two,.grid.three{grid-template-columns:1fr}.hero{align-items:flex-start}.goal-form,.agenda-form{grid-template-columns:1fr}
-  .bottom-nav{width:calc(100% - 12px);bottom:6px;padding:5px}.nav-btn{padding:7px 2px}.nav-btn span{font-size:.55rem}
+  .bottom-nav{width:calc(100% - 12px);bottom:6px;padding:4px;gap:2px}.nav-btn{padding:7px 1px;font-size:.9rem}.nav-btn span{font-size:.48rem}
   main{padding:12px}.topbar{padding:13px;gap:8px}.top-actions{gap:5px}.sync-badge{display:none}.topbar .ghost{padding:9px 10px}
 }
