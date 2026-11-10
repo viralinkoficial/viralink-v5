@@ -256,29 +256,38 @@ function healthModule(){
 \n
 function moneyModule(){
   const moneyKey="projectV_money_v1";
-  let data=store.get(moneyKey,{start:"",incomes:[],debts:[]});
+  let data=store.get(moneyKey,{start:"",incomes:[],debts:[],reserves:[]});
+  data.incomes=Array.isArray(data.incomes)?data.incomes:[];
+  data.debts=Array.isArray(data.debts)?data.debts:[];
+  data.reserves=Array.isArray(data.reserves)?data.reserves:[];
   const moneyFmt=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  const save=()=>{store.set(moneyKey,data);$("moneySaved").textContent="Salvo neste aparelho. Faça uma cópia dos seus registros importantes.";render();};
   const received=()=>data.incomes.reduce((s,x)=>s+Number(x.value||0),0);
+  const debtOpen=()=>data.debts.filter(d=>!d.paid).reduce((s,d)=>s+Number(d.value||0),0);
+  const reserved=()=>data.reserves.reduce((s,x)=>s+Number(x.value||0),0);
+  const save=()=>{store.set(moneyKey,data);$("moneySaved").textContent="Salvo neste aparelho. Faça uma cópia dos seus registros importantes.";render();};
   const render=()=>{
-    const total=received(),remaining=Math.max(0,10000-total);
+    const total=received(),debt=debtOpen(),reserve=reserved();
     $("moneyReceived").textContent=moneyFmt(total);
-    $("moneyRemaining").textContent=moneyFmt(remaining);
+    $("debtRemaining").textContent=moneyFmt(debt);
+    $("houseReserveTotal").textContent=moneyFmt(reserve);
+    $("debtTotal").textContent=moneyFmt(debt);
+    $("moneyTargetLabel").textContent=moneyFmt(total)+" / "+moneyFmt(10000);
     $("moneyProgress").style.width=Math.min(100,total/10000*100)+"%";
-    $("moneyDays").textContent=data.start?Math.max(0,15-Math.floor((Date.now()-new Date(data.start+"T00:00:00").getTime())/86400000)):"15";
-    $("debtTotal").textContent=moneyFmt(data.debts.filter(d=>!d.paid).reduce((s,d)=>s+Number(d.value||0),0));
     $("incomeCount").textContent=data.incomes.length+" recebimentos";
     $("incomeList").innerHTML=data.incomes.length?data.incomes.slice().reverse().map(x=>'<div class="money-row"><div><strong>'+escapeHtml(x.source)+'</strong><span>'+escapeHtml(x.date)+'</span></div><strong>'+moneyFmt(x.value)+'</strong><button class="mini" data-remove-income="'+x.id+'">Excluir</button></div>').join(""):'<p class="muted">Nenhum recebimento registrado.</p>';
-    $("debtList").innerHTML=data.debts.length?data.debts.map(x=>'<div class="money-row '+(x.paid?'money-paid':'')+'"><div><strong>'+escapeHtml(x.creditor)+'</strong><span>'+ (x.paid?'Quitada':'Em aberto') +'</span></div><strong>'+moneyFmt(x.value)+'</strong><div class="goal-actions"><button class="mini" data-toggle-debt="'+x.id+'">'+(x.paid?'Reabrir':'Quitada')+'</button><button class="mini" data-remove-debt="'+x.id+'">Excluir</button></div></div>').join(""):'<p class="muted">Nenhuma dívida cadastrada.</p>';
-    $("moneyList")?.replaceChildren();
-    $("incomeList").querySelectorAll("[data-remove-income]").forEach(b=>b.onclick=()=>{data.incomes=data.incomes.filter(x=>x.id!==Number(b.dataset.removeIncome));save();});
-    $("debtList").querySelectorAll("[data-toggle-debt]").forEach(b=>b.onclick=()=>{const d=data.debts.find(x=>x.id===Number(b.dataset.toggleDebt));if(d)d.paid=!d.paid;save();});
-    $("debtList").querySelectorAll("[data-remove-debt]").forEach(b=>b.onclick=()=>{data.debts=data.debts.filter(x=>x.id!==Number(b.dataset.removeDebt));save();});
+    $("debtList").innerHTML=data.debts.length?data.debts.map(x=>'<div class="money-row '+(x.paid?'money-paid':'')+'"><div><strong>'+escapeHtml(x.creditor)+'</strong><span>'+(x.paid?'Quitada':'Em aberto')+'</span></div><strong>'+moneyFmt(x.value)+'</strong><div class="goal-actions"><button class="mini" data-toggle-debt="'+x.id+'">'+(x.paid?'Reabrir':'Quitada')+'</button><button class="mini" data-remove-debt="'+x.id+'">Excluir</button></div></div>').join(""):'<p class="muted">Nenhuma dívida cadastrada.</p>';
+    $("reserveCount").textContent=data.reserves.length+" registros";
+    $("reserveList").innerHTML=data.reserves.length?data.reserves.slice().reverse().map(x=>'<div class="money-row"><div><strong>'+moneyFmt(x.value)+'</strong><span>'+escapeHtml(x.date)+(x.note?' · '+escapeHtml(x.note):'')+'</span></div><button class="mini" data-remove-reserve="'+x.id+'">Remover</button></div>').join(""):'<p class="muted">Ainda não há valores reservados.</p>';
+    $("incomeList").querySelectorAll("[data-remove-income]").forEach(btn=>btn.onclick=()=>{data.incomes=data.incomes.filter(x=>x.id!==Number(btn.dataset.removeIncome));save();});
+    $("debtList").querySelectorAll("[data-toggle-debt]").forEach(btn=>btn.onclick=()=>{const d=data.debts.find(x=>x.id===Number(btn.dataset.toggleDebt));if(d)d.paid=!d.paid;save();});
+    $("debtList").querySelectorAll("[data-remove-debt]").forEach(btn=>btn.onclick=()=>{data.debts=data.debts.filter(x=>x.id!==Number(btn.dataset.removeDebt));save();});
+    $("reserveList").querySelectorAll("[data-remove-reserve]").forEach(btn=>btn.onclick=()=>{data.reserves=data.reserves.filter(x=>x.id!==Number(btn.dataset.removeReserve));save();});
   };
   if(!data.start){data.start=todayKey;store.set(moneyKey,data);}
   $("moneyStart").value=data.start;
   $("moneyStart").onchange=()=>{data.start=$("moneyStart").value||todayKey;save();};
   $("incomeDate").value=todayKey;
+  $("reserveDate").value=todayKey;
   $("addIncome").onclick=()=>{
     const source=$("incomeSource").value.trim(),value=Number($("incomeValue").value),date=$("incomeDate").value||todayKey;
     if(!source||!Number.isFinite(value)||value<=0){alert("Informe a origem e um valor recebido válido.");return;}
@@ -289,9 +298,13 @@ function moneyModule(){
     if(!creditor||!Number.isFinite(value)||value<=0){alert("Informe o credor e o valor atualizado da dívida.");return;}
     data.debts.push({id:Date.now(),creditor,value,paid:false});$("debtCreditor").value="";$("debtValue").value="";save();
   };
+  $("addReserve").onclick=()=>{
+    const value=Number($("reserveValue").value),date=$("reserveDate").value||todayKey,note=$("reserveNote").value.trim();
+    if(!Number.isFinite(value)||value<=0){alert("Informe um valor reservado válido.");return;}
+    data.reserves.push({id:Date.now(),value,date,note});$("reserveValue").value="";$("reserveNote").value="";save();
+  };
   render();
-}
-\nfunction nav(){
+}\nfunction nav(){
   document.querySelectorAll(".nav-btn").forEach(btn=>{btn.onclick=()=>{document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");window.scrollTo({top:0,behavior:"smooth"});}});
 }
 
