@@ -106,7 +106,7 @@ button{border:0;border-radius:14px;padding:12px 15px;font-weight:700;cursor:poin
 .modal-close{position:absolute;right:12px;top:10px;background:transparent;color:#aaa;font-size:1.6rem;padding:8px}
 @media(max-width:760px){
   .grid.two,.grid.three{grid-template-columns:1fr}.hero{align-items:flex-start}.goal-form,.agenda-form{grid-template-columns:1fr}
-  .bottom-nav{width:calc(100% - 12px);bottom:6px;padding:4px;gap:2px}.nav-btn{padding:7px 1px;font-size:.9rem}.nav-btn span{font-size:.48rem}
+  .bottom-nav{width:calc(100% - 12px);bottom:6px;padding:4px;gap:2px;display:flex;overflow-x:auto;justify-content:flex-start}.nav-btn{flex:0 0 70px;padding:7px 1px;font-size:.9rem}.nav-btn span{font-size:.48rem}
   main{padding:12px}.topbar{padding:13px;gap:8px}.top-actions{gap:5px}.sync-badge{display:none}.topbar .ghost{padding:9px 10px}
 }
 
