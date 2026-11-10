@@ -412,8 +412,17 @@ $("authBtn").onclick=accountAction; $("accountAction").onclick=accountAction; $(
 $("authModal").addEventListener("click",e=>{if(e.target===$("authModal"))closeAuth();});
 
 let deferredPrompt;
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("installBtn").classList.remove("hidden");});
-$("installBtn").onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("installBtn").classList.add("hidden");};
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;});
+$("installBtn").onclick=async()=>{
+  if(!deferredPrompt){
+    alert("Para instalar: abra este app no Google Chrome, toque nos três pontinhos (⋮) e escolha 'Instalar aplicativo' ou 'Adicionar à tela inicial'.");
+    return;
+  }
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt=null;
+};
+window.addEventListener("appinstalled",()=>{$("installBtn").classList.add("hidden");});
 if("serviceWorker" in navigator){window.addEventListener("load",async()=>{serviceWorkerRegistration=await navigator.serviceWorker.register("sw.js");});}
 
 loadToday();renderHabits();renderGoals();renderAgenda();refreshStats();nav();config();review();healthModule();moneyModule();bootstrapAuth();
