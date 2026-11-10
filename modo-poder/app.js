@@ -253,7 +253,8 @@ function healthModule(){
     $("healthSaved").textContent="Acompanhamento salvo somente neste aparelho. Leve suas anotações à consulta.";
   };
 }
-\n
+
+
 function moneyModule(){
   const moneyKey="projectV_money_v1";
   let data=store.get(moneyKey,{start:"",incomes:[],debts:[],reserves:[]});
@@ -304,7 +305,8 @@ function moneyModule(){
     data.reserves.push({id:Date.now(),value,date,note});$("reserveValue").value="";$("reserveNote").value="";save();
   };
   render();
-}\nfunction nav(){
+}
+function nav(){
   document.querySelectorAll(".nav-btn").forEach(btn=>{btn.onclick=()=>{document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");window.scrollTo({top:0,behavior:"smooth"});}});
 }
 
