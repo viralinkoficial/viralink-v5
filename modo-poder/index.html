@@ -151,7 +151,56 @@
     </section>
 
 
-    <section id="saude" class="page">
+
+    <section id="dinheiro" class="page">
+      <div class="card money-hero">
+        <span class="pill">PROJETO V · OPERAÇÃO 15 DIAS</span>
+        <h2>R$ 10.000 para reorganizar sua vida financeira</h2>
+        <p class="muted">Registre somente dinheiro efetivamente recebido. Propostas e vendas ainda não pagas não entram no total.</p>
+        <div class="money-total"><strong id="moneyReceived">R$ 0,00</strong><span>recebido de R$ 10.000</span></div>
+        <div class="money-progress"><span id="moneyProgress"></span></div>
+        <div class="grid two money-stats">
+          <div><span>Falta receber</span><strong id="moneyRemaining">R$ 10.000,00</strong></div>
+          <div><span>Dias restantes</span><strong id="moneyDays">15</strong></div>
+        </div>
+        <label class="field">Início da operação<input id="moneyStart" type="date"></label>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <h3>Registrar dinheiro recebido</h3>
+          <label class="field">Origem / serviço<input id="incomeSource" placeholder="Ex.: site para restaurante"></label>
+          <label class="field">Valor recebido (R$)<input id="incomeValue" type="number" min="0.01" step="0.01" placeholder="0,00"></label>
+          <label class="field">Data do recebimento<input id="incomeDate" type="date"></label>
+          <button id="addIncome" class="primary full">Adicionar recebimento</button>
+          <p class="small muted">Registre apenas valores que já caíram na sua conta ou foram pagos em dinheiro.</p>
+        </div>
+        <div class="card">
+          <h3>Cadastrar dívida</h3>
+          <label class="field">Credor<input id="debtCreditor" placeholder="Nome do banco ou empresa"></label>
+          <label class="field">Valor atualizado (R$)<input id="debtValue" type="number" min="0.01" step="0.01" placeholder="0,00"></label>
+          <button id="addDebt" class="secondary full">Adicionar dívida</button>
+          <div class="money-stats"><span>Total de dívidas registradas</span><strong id="debtTotal">R$ 0,00</strong></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-head"><h3>Entradas registradas</h3><span id="incomeCount" class="small muted">0 recebimentos</span></div>
+        <div id="incomeList" class="money-list"><p class="muted">Nenhum recebimento registrado.</p></div>
+      </div>
+      <div class="card spaced">
+        <div class="section-head"><h3>Minhas dívidas</h3><span class="small muted">Marque após confirmar a quitação</span></div>
+        <div id="debtList" class="money-list"><p class="muted">Nenhuma dívida cadastrada.</p></div>
+      </div>
+      <div class="card spaced">
+        <span class="pill">PATRIMÔNIO · LONGO PRAZO</span>
+        <h3>As duas casas do Projeto V</h3>
+        <div class="house-goal"><strong>Casa grande no centro de Belém</strong><span>Objetivo de compra · orçamento a definir</span></div>
+        <div class="house-goal"><strong>Casa próxima à natureza, rios e igarapés</strong><span>Objetivo de compra · avaliar terreno, acesso e risco de alagamento</span></div>
+        <div class="house-goal"><strong>Bunker subterrâneo para 5 pessoas</strong><span>Projeto futuro sujeito a estudo geotécnico, lençol freático, drenagem, ventilação, saídas e licenças profissionais</span></div>
+        <p class="small muted spaced">Primeiro organizar as dívidas e formar caixa. Não assumir financiamento ou comprar terreno antes de conhecer todos os custos e riscos.</p>
+      </div>
+      <p id="moneySaved" class="small muted">Os registros financeiros desta seção ficam salvos neste aparelho.</p>
+    </section>
+\n    <section id="saude" class="page">
       <div class="card">
         <span class="pill">SAÚDE · SEM PRESSA E SEM PUNIÇÃO</span>
         <h2>Meu acompanhamento de saúde</h2>
@@ -223,12 +272,12 @@
     </section>
   </main>
 
-  <nav class="bottom-nav seven">
+  <nav class="bottom-nav">
     <button data-page="hoje" class="nav-btn active">🏠<span>Hoje</span></button>
     <button data-page="habitos" class="nav-btn">🔥<span>Hábitos</span></button>
     <button data-page="metas" class="nav-btn">🎯<span>Metas</span></button>
     <button data-page="agenda" class="nav-btn">🗓️<span>Agenda</span></button>
-    <button data-page="desempenho" class="nav-btn">📊<span>Desempenho</span></button>
+    <button data-page="desempenho" class="nav-btn">📊<span>Desempenho</span></button>\n    <button data-page="dinheiro" class="nav-btn">💰<span>Dinheiro</span></button>
     <button data-page="mentalidade" class="nav-btn">⚡<span>Poder</span></button>
     <button data-page="saude" class="nav-btn">❤️<span>Saúde</span></button>
     <button data-page="config" class="nav-btn">⚙️<span>Ajustes</span></button>
