@@ -150,6 +150,41 @@
       </div>
     </section>
 
+
+    <section id="saude" class="page">
+      <div class="card">
+        <span class="pill">SAÚDE · SEM PRESSA E SEM PUNIÇÃO</span>
+        <h2>Meu acompanhamento de saúde</h2>
+        <p class="muted">O objetivo inicial é cuidar da saúde e construir hábitos sustentáveis. Não há meta de perda rápida de peso nem dieta automática.</p>
+        <div class="grid two">
+          <label class="field">Peso registrado (kg)<input id="healthWeight" type="number" min="1" max="500" step="0.1" placeholder="Registre quando desejar"></label>
+          <label class="field">Data do registro<input id="healthDate" type="date"></label>
+        </div>
+        <label class="field">Próximo passo de saúde
+          <select id="healthNext">
+            <option value="Agendar avaliação na UBS ou com médico">Agendar avaliação na UBS ou com médico</option>
+            <option value="Levar exames e lista de medicamentos à consulta">Levar exames e lista de medicamentos</option>
+            <option value="Conversar sobre sono e ronco">Conversar sobre sono e ronco</option>
+            <option value="Conversar sobre alimentação e mobilidade segura">Conversar sobre alimentação e mobilidade segura</option>
+            <option value="Acompanhar orientação da equipe de saúde">Acompanhar orientação da equipe de saúde</option>
+          </select>
+        </label>
+        <label class="field">Anotações para a consulta<textarea id="healthNotes" placeholder="Dúvidas, sintomas, medicamentos e perguntas para o profissional de saúde."></textarea></label>
+        <button id="saveHealth" class="primary full">Salvar acompanhamento neste aparelho</button>
+        <p id="healthSaved" class="small muted"></p>
+      </div>
+      <div class="card spaced">
+        <h3>Hábitos de cuidado</h3>
+        <div class="checklist" id="healthHabits">
+          <label class="habit-row"><span>Organizar uma avaliação de saúde</span><input type="checkbox" data-health="appointment"></label>
+          <label class="habit-row"><span>Fazer refeições com atenção e sem medidas extremas</span><input type="checkbox" data-health="meal"></label>
+          <label class="habit-row"><span>Beber água ao longo do dia, conforme orientação clínica</span><input type="checkbox" data-health="water"></label>
+          <label class="habit-row"><span>Escolher movimento leve e confortável, se for seguro</span><input type="checkbox" data-health="movement"></label>
+          <label class="habit-row"><span>Priorizar horário regular de sono</span><input type="checkbox" data-health="sleep"></label>
+        </div>
+        <p class="small muted spaced">Não faça exercícios intensos, saltos ou restrições alimentares por conta própria. Peça orientação profissional antes de iniciar um programa de emagrecimento.</p>
+      </div>
+    </section>
     <section id="mentalidade" class="page">
       <div class="card">
         <span class="pill">MENTALIDADE</span>
@@ -192,6 +227,7 @@
     <button data-page="agenda" class="nav-btn">🗓️<span>Agenda</span></button>
     <button data-page="desempenho" class="nav-btn">📊<span>Desempenho</span></button>
     <button data-page="mentalidade" class="nav-btn">⚡<span>Poder</span></button>
+    <button data-page="saude" class="nav-btn">❤️<span>Saúde</span></button>
     <button data-page="config" class="nav-btn">⚙️<span>Ajustes</span></button>
   </nav>
 
