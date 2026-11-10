@@ -253,6 +253,44 @@ function healthModule(){
     $("healthSaved").textContent="Acompanhamento salvo somente neste aparelho. Leve suas anotações à consulta.";
   };
 }
+\n
+function moneyModule(){
+  const moneyKey="projectV_money_v1";
+  let data=store.get(moneyKey,{start:"",incomes:[],debts:[]});
+  const moneyFmt=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  const save=()=>{store.set(moneyKey,data);$("moneySaved").textContent="Salvo neste aparelho. Faça uma cópia dos seus registros importantes.";render();};
+  const received=()=>data.incomes.reduce((s,x)=>s+Number(x.value||0),0);
+  const render=()=>{
+    const total=received(),remaining=Math.max(0,10000-total);
+    $("moneyReceived").textContent=moneyFmt(total);
+    $("moneyRemaining").textContent=moneyFmt(remaining);
+    $("moneyProgress").style.width=Math.min(100,total/10000*100)+"%";
+    $("moneyDays").textContent=data.start?Math.max(0,15-Math.floor((Date.now()-new Date(data.start+"T00:00:00").getTime())/86400000)):"15";
+    $("debtTotal").textContent=moneyFmt(data.debts.filter(d=>!d.paid).reduce((s,d)=>s+Number(d.value||0),0));
+    $("incomeCount").textContent=data.incomes.length+" recebimentos";
+    $("incomeList").innerHTML=data.incomes.length?data.incomes.slice().reverse().map(x=>'<div class="money-row"><div><strong>'+escapeHtml(x.source)+'</strong><span>'+escapeHtml(x.date)+'</span></div><strong>'+moneyFmt(x.value)+'</strong><button class="mini" data-remove-income="'+x.id+'">Excluir</button></div>').join(""):'<p class="muted">Nenhum recebimento registrado.</p>';
+    $("debtList").innerHTML=data.debts.length?data.debts.map(x=>'<div class="money-row '+(x.paid?'money-paid':'')+'"><div><strong>'+escapeHtml(x.creditor)+'</strong><span>'+ (x.paid?'Quitada':'Em aberto') +'</span></div><strong>'+moneyFmt(x.value)+'</strong><div class="goal-actions"><button class="mini" data-toggle-debt="'+x.id+'">'+(x.paid?'Reabrir':'Quitada')+'</button><button class="mini" data-remove-debt="'+x.id+'">Excluir</button></div></div>').join(""):'<p class="muted">Nenhuma dívida cadastrada.</p>';
+    $("moneyList")?.replaceChildren();
+    $("incomeList").querySelectorAll("[data-remove-income]").forEach(b=>b.onclick=()=>{data.incomes=data.incomes.filter(x=>x.id!==Number(b.dataset.removeIncome));save();});
+    $("debtList").querySelectorAll("[data-toggle-debt]").forEach(b=>b.onclick=()=>{const d=data.debts.find(x=>x.id===Number(b.dataset.toggleDebt));if(d)d.paid=!d.paid;save();});
+    $("debtList").querySelectorAll("[data-remove-debt]").forEach(b=>b.onclick=()=>{data.debts=data.debts.filter(x=>x.id!==Number(b.dataset.removeDebt));save();});
+  };
+  if(!data.start){data.start=todayKey;store.set(moneyKey,data);}
+  $("moneyStart").value=data.start;
+  $("moneyStart").onchange=()=>{data.start=$("moneyStart").value||todayKey;save();};
+  $("incomeDate").value=todayKey;
+  $("addIncome").onclick=()=>{
+    const source=$("incomeSource").value.trim(),value=Number($("incomeValue").value),date=$("incomeDate").value||todayKey;
+    if(!source||!Number.isFinite(value)||value<=0){alert("Informe a origem e um valor recebido válido.");return;}
+    data.incomes.push({id:Date.now(),source,value,date});$("incomeSource").value="";$("incomeValue").value="";save();
+  };
+  $("addDebt").onclick=()=>{
+    const creditor=$("debtCreditor").value.trim(),value=Number($("debtValue").value);
+    if(!creditor||!Number.isFinite(value)||value<=0){alert("Informe o credor e o valor atualizado da dívida.");return;}
+    data.debts.push({id:Date.now(),creditor,value,paid:false});$("debtCreditor").value="";$("debtValue").value="";save();
+  };
+  render();
+}
 \nfunction nav(){
   document.querySelectorAll(".nav-btn").forEach(btn=>{btn.onclick=()=>{document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");window.scrollTo({top:0,behavior:"smooth"});}});
 }
@@ -365,5 +403,5 @@ window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPro
 $("installBtn").onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("installBtn").classList.add("hidden");};
 if("serviceWorker" in navigator){window.addEventListener("load",async()=>{serviceWorkerRegistration=await navigator.serviceWorker.register("sw.js");});}
 
-loadToday();renderHabits();renderGoals();renderAgenda();refreshStats();nav();config();review();healthModule();bootstrapAuth();
+loadToday();renderHabits();renderGoals();renderAgenda();refreshStats();nav();config();review();healthModule();moneyModule();bootstrapAuth();
 setInterval(checkAgendaReminders,30000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkAgendaReminders();});
