@@ -240,7 +240,20 @@ function analyzeDay(){
   $("coachOutput").innerHTML=parts.map(x=>`<p>${escapeHtml(x)}</p>`).join("");
 }
 
-function nav(){
+
+function healthModule(){
+  const fields=["healthWeight","healthDate","healthNext","healthNotes"];
+  const saved=store.get("healthTracker",{});
+  fields.forEach(id=>{if(saved[id]!==undefined) $(id).value=saved[id];});
+  if(!$("healthDate").value) $("healthDate").value=todayKey;
+  document.querySelectorAll("[data-health]").forEach(cb=>{cb.checked=!!store.get("healthHabit:"+todayKey+":"+cb.dataset.health,false);cb.addEventListener("change",()=>store.set("healthHabit:"+todayKey+":"+cb.dataset.health,cb.checked));});
+  $("saveHealth").onclick=()=>{
+    const data={}; fields.forEach(id=>data[id]=$(id).value);
+    store.set("healthTracker",data);
+    $("healthSaved").textContent="Acompanhamento salvo somente neste aparelho. Leve suas anotações à consulta.";
+  };
+}
+\nfunction nav(){
   document.querySelectorAll(".nav-btn").forEach(btn=>{btn.onclick=()=>{document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");window.scrollTo({top:0,behavior:"smooth"});}});
 }
 
@@ -352,5 +365,5 @@ window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPro
 $("installBtn").onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("installBtn").classList.add("hidden");};
 if("serviceWorker" in navigator){window.addEventListener("load",async()=>{serviceWorkerRegistration=await navigator.serviceWorker.register("sw.js");});}
 
-loadToday();renderHabits();renderGoals();renderAgenda();refreshStats();nav();config();review();bootstrapAuth();
+loadToday();renderHabits();renderGoals();renderAgenda();refreshStats();nav();config();review();healthModule();bootstrapAuth();
 setInterval(checkAgendaReminders,30000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkAgendaReminders();});
